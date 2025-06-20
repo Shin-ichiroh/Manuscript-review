@@ -1,5 +1,4 @@
 # Phase 1 imports
-# Now using get_dynamic_html_with_selenium instead of get_html_content
 from src.scraper import get_dynamic_html_with_selenium, extract_text_from_html, integrate_all_text
 
 # Phase 2 imports
@@ -20,20 +19,34 @@ if __name__ == "__main__":
     job_post_text = "" # Initialize
 
     print(f"Fetching dynamic HTML from: {sample_url}")
-    # Call the Selenium-based dynamic HTML fetching function
-    # The wait_time parameter in get_dynamic_html_with_selenium defaults to 10,
-    # we can override it here if needed, e.g., get_dynamic_html_with_selenium(sample_url, wait_time=15)
     html_content = get_dynamic_html_with_selenium(sample_url, wait_time=15)
 
     if html_content:
         print("Dynamic HTML content fetched successfully using Selenium.")
-        # Pass sample_url as base_url for resolving relative image paths in scraper
+
+        # Remove/comment out saving of debug_main_fetched_page.html
+        # try:
+        #     with open("debug_main_fetched_page.html", "w", encoding="utf-8") as f:
+        #         f.write(html_content)
+        #     print("Successfully saved fetched HTML to debug_main_fetched_page.html")
+        # except Exception as e:
+        #     print(f"Error saving fetched HTML to debug_main_fetched_page.html: {e}")
+
         extracted_info = extract_text_from_html(html_content, sample_url)
-        print("Text extracted from dynamic HTML (including mock OCR).")
+
+        # Add detailed logging for the extracted_info dictionary
+        print("\n[DEBUG in main.py] Extracted Info Dictionary Check:")
+        print(f"[DEBUG in main.py]   Raw job_title: {extracted_info.get('job_title')}")
+        print(f"[DEBUG in main.py]   Raw salary: {extracted_info.get('salary')}")
+        print(f"[DEBUG in main.py]   Raw location: {extracted_info.get('location')}")
+        print(f"[DEBUG in main.py]   Raw qualifications: {extracted_info.get('qualifications')}")
+        # print(f"[DEBUG in main.py] All keys in extracted_info: {list(extracted_info.keys())}")
+
+
+        print("\nText extracted from dynamic HTML (including mock OCR).") # Original print statement
 
         job_post_text = integrate_all_text(extracted_info)
         if job_post_text:
-            # Check if specific fields were found, to inform the user
             specific_fields_extracted = any([
                 extracted_info.get('job_title'),
                 extracted_info.get('salary'),
@@ -41,8 +54,11 @@ if __name__ == "__main__":
                 extracted_info.get('qualifications')
             ])
             if not specific_fields_extracted:
-                print("\n  Note from main.py: Specific fields (job title, salary, etc.) were not found by the current parser.")
+                print("\n  Note from main.py: Specific fields (job title, salary, etc.) were NOT found by the current parser according to 'any' check.")
                 print("  The 'full_text' from the page will be used for the review phase.")
+            else:
+                print("\n  Note from main.py: Specific fields (job title, salary, etc.) WERE found by the current parser according to 'any' check.")
+
 
             print(f"\nIntegrated job post text (first 300 chars):\n{job_post_text[:300]}...")
 
@@ -60,7 +76,6 @@ if __name__ == "__main__":
     print("\n--- Phase 2: AI Review Logic ---")
 
     print("Loading rulebook...")
-    # rulebook.md is in the same directory as main.py
     rulebook_content = load_rulebook("rulebook.md")
 
     if rulebook_content.startswith("Error:") or rulebook_content.startswith("An unexpected error occurred:"):
@@ -72,9 +87,9 @@ if __name__ == "__main__":
         rulebook_vector_db = add_mock_vectors_to_chunks(parsed_chunks)
         print(f"Rulebook processed into {len(rulebook_vector_db)} vectorized chunks.")
 
-        if not job_post_text: # Should have been set to a placeholder if empty before
+        if not job_post_text:
              print("Job post text is empty, review might not be meaningful but proceeding with a default empty text...")
-             job_post_text = "内容が空の求人原稿です。" # Final fallback
+             job_post_text = "内容が空の求人原稿です。"
 
         print("\nPerforming review on the job post text...")
         review_result = perform_review(job_post_text, rulebook_vector_db)

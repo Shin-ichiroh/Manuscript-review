@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager # To manage ChromeDriver
 from selenium.webdriver.chrome.options import Options
 import time
+import os
 
 def get_html_content(url: str, headers: dict | None = None) -> str | None:
     """Fetches HTML content from a URL using requests (static fetch).
@@ -95,7 +96,8 @@ def perform_ocr_on_image(image_url: str) -> str:
 
 def extract_text_from_html(html_content: str, base_url: str) -> dict[str, any]:
     """
-    Extracts specific job details, all available text, and simulated OCR text from images.
+    Extracts specific job details, all available text, and simulated OCR text from images
+    using CSS selectors derived from analysis of the target site's dynamic HTML.
     """
     soup = BeautifulSoup(html_content, "html.parser")
     data: dict[str, any] = {
@@ -107,29 +109,34 @@ def extract_text_from_html(html_content: str, base_url: str) -> dict[str, any]:
         "image_ocr_texts": [],
     }
 
-    # Job Title: Try the specific class from original inspection, then fallback to h1
-    title_tag = soup.find('h1', class_='h1-company-name_inner')
-    if not title_tag:
-        title_tag = soup.find('h1')
-    if title_tag:
-        data['job_title'] = title_tag.get_text(strip=True)
+    # Job Title (採用職種) - Note the trailing space in '採用職種 '
+    job_title_tag = soup.select_one("dl.sep-text dt:-soup-contains('採用職種 ') + dd div span")
+    data['job_title'] = job_title_tag.get_text(separator='\n', strip=True) if job_title_tag else None
 
     # Salary (給与)
-    salary_th = soup.find('th', string=lambda t: t and '給与' in t)
-    if salary_th and salary_th.find_next_sibling('td'):
-        data['salary'] = salary_th.find_next_sibling('td').get_text(strip=True)
+    salary_tag = soup.select_one("dl.sep-text dt:-soup-contains('給与') + dd div span")
+    data['salary'] = salary_tag.get_text(separator='\n', strip=True) if salary_tag else None
 
-    # Location (勤務地)
-    location_th = soup.find('th', string=lambda t: t and '勤務地' in t)
-    if location_th and location_th.find_next_sibling('td'):
-        data['location'] = location_th.find_next_sibling('td').get_text(strip=True)
+    # Location (勤務地) - This selector might match multiple <dt>s if "勤務地" appears under different sections.
+    # For this specific page, "募集概要" section's 勤務地 is targeted by this general selector.
+    # If more specificity is needed (e.g. to distinguish from a company HQ location if also listed similarly),
+    # a more complex selector chaining from the section header (e.g. h3:-soup-contains('募集概要') ~ dl.sep-text ...) would be needed.
+    location_tag = soup.select_one("dl.sep-text dt:-soup-contains('勤務地') + dd div span")
+    data['location'] = location_tag.get_text(separator='\n', strip=True) if location_tag else None
 
-    # Qualifications (応募資格 or 対象となる方)
-    qualifications_th = soup.find('th', string=lambda t: t and '応募資格' in t)
-    if not qualifications_th:
-        qualifications_th = soup.find('th', string=lambda t: t and '対象となる方' in t)
-    if qualifications_th and qualifications_th.find_next_sibling('td'):
-        data['qualifications'] = qualifications_th.find_next_sibling('td').get_text(strip=True)
+    # Qualifications (応募資格)
+    qualifications_tag = soup.select_one("dl.sep-text dt:-soup-contains('応募資格') + dd div span")
+    data['qualifications'] = qualifications_tag.get_text(separator='\n', strip=True) if qualifications_tag else None
+
+    # Fallback for Job Title if the specific one isn't found (e.g. general page title)
+    if not data['job_title']:
+        # This was the original fallback, might be useful if the above is too specific or fails
+        title_tag_h1_company = soup.find('h1', class_='h1-company-name_inner')
+        if title_tag_h1_company:
+            data['job_title'] = title_tag_h1_company.get_text(strip=True)
+        elif soup.find('h1'): # Generic H1
+             data['job_title'] = soup.find('h1').get_text(strip=True)
+
 
     data['full_text'] = soup.get_text(separator=' ', strip=True)
 
@@ -156,7 +163,6 @@ def integrate_all_text(extracted_data: dict) -> str:
     return "\n\n".join(text_parts)
 
 if __name__ == "__main__":
-    # Test static fetch (optional, can be commented out if focusing on dynamic)
     print("--- Testing Static HTML Fetch (requests) ---")
     static_url = "http://example.com"
     headers = {
@@ -168,17 +174,25 @@ if __name__ == "__main__":
     else:
         print(f"Failed to fetch static HTML from {static_url}\n")
 
-    # Test dynamic fetch with Selenium and process its output
-    print("\n--- Testing Selenium-based Dynamic HTML Fetch & Extraction ---")
+    print("\n--- Testing Selenium-based Dynamic HTML Fetch & Extraction (and saving HTML) ---")
     dynamic_url = "https://www.gakujo.ne.jp/campus/company/employ/82098/?prv=ON&WINTYPE=%27SUB%27"
 
     print(f"Fetching dynamic HTML from: {dynamic_url}")
-    # Using a longer wait time for this potentially complex page
     dynamic_html = get_dynamic_html_with_selenium(dynamic_url, wait_time=15)
 
     if dynamic_html:
-        print("Dynamic HTML fetched successfully. Now extracting specific fields...")
-        # Pass dynamic_url as base_url for resolving relative image paths
+        print(f"Successfully fetched dynamic HTML (first 500 chars):\n{dynamic_html[:500]}")
+
+        # Temporarily saved HTML, now removing/commenting out this part as per cleanup
+        # output_file_path = "temp_dynamic_page.html"
+        # try:
+        #     with open(output_file_path, "w", encoding="utf-8") as f:
+        #         f.write(dynamic_html)
+        #     print(f"Successfully saved dynamic HTML to {output_file_path}")
+        # except Exception as e:
+        #     print(f"Error saving dynamic HTML to file '{output_file_path}': {e}")
+
+        print("\nDynamic HTML fetched successfully. Now extracting specific fields...")
         extracted_info = extract_text_from_html(dynamic_html, dynamic_url)
 
         print("\n--- Extracted Fields from Dynamic HTML ---")
@@ -187,7 +201,6 @@ if __name__ == "__main__":
         print(f"  Location: {extracted_info.get('location')}")
         print(f"  Qualifications: {extracted_info.get('qualifications')}")
 
-        # Check if specific fields were found
         specific_fields_found = any([
             extracted_info.get('job_title'),
             extracted_info.get('salary'),
@@ -203,14 +216,13 @@ if __name__ == "__main__":
         print(f"\n  Full Text (first 200 chars): {extracted_info.get('full_text', '')[:200]}...")
 
         if extracted_info.get('image_ocr_texts'):
-            print(f"  Image OCR Texts: {extracted_info.get('image_ocr_texts')}")
+            print(f"  Image OCR Texts (count): {len(extracted_info.get('image_ocr_texts'))}")
         else:
             print("  Image OCR Texts: No images processed or found.")
 
         final_text = integrate_all_text(extracted_info)
         if final_text:
             print(f"\nIntegrated final text length: {len(final_text)} characters.")
-            # print(f"Integrated final text (first 200 chars): {final_text[:200]}...") # Can be verbose
         else:
             print("\nNo text content was integrated from dynamic HTML.")
 

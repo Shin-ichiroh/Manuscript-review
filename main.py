@@ -1,5 +1,5 @@
 # Phase 1 imports
-from src.scraper import get_dynamic_html_with_selenium, extract_text_from_html # integrate_all_text might not be needed now
+from src.scraper import get_dynamic_html_with_selenium, extract_text_from_html
 
 # Phase 2 imports
 from src.rule_processor import load_rulebook, parse_rulebook_to_chunks, add_mock_vectors_to_chunks
@@ -17,20 +17,26 @@ if __name__ == "__main__":
     print("\n--- Phase 1: Data Acquisition (using Selenium) ---")
     sample_url = "https://www.gakujo.ne.jp/campus/company/employ/82098/?prv=ON&WINTYPE=%27SUB%27"
 
-    # Initialize variables for structured data
-    job_post_url = sample_url # URL is known
+    job_post_url = sample_url
     job_title = None
     salary = None
     location = None
     qualifications = None
-    full_text_content = None # This will be the 'full_text' from scraper
-    # image_ocr_texts are in extracted_info but not directly used in the new prompt structure yet
+    full_text_content = None
 
     print(f"Fetching dynamic HTML from: {sample_url}")
     html_content = get_dynamic_html_with_selenium(sample_url, wait_time=15)
 
     if html_content:
         print("Dynamic HTML content fetched successfully using Selenium.")
+
+        # Code for saving debug_main_run_page.html is now removed/commented out for cleanup.
+        # try:
+        #     with open("debug_main_run_page.html", "w", encoding="utf-8") as f:
+        #         f.write(html_content)
+        #     print("[DEBUG from main.py] Successfully saved fetched HTML to debug_main_run_page.html")
+        # except Exception as e:
+        #     print(f"[DEBUG from main.py] Error saving fetched HTML to debug_main_run_page.html: {e}")
 
         extracted_info = extract_text_from_html(html_content, sample_url)
 
@@ -39,37 +45,40 @@ if __name__ == "__main__":
         salary = extracted_info.get('salary')
         location = extracted_info.get('location')
         qualifications = extracted_info.get('qualifications')
-        full_text_content = extracted_info.get('full_text') # This is used as main text for RAG and prompt
+        full_text_content = extracted_info.get('full_text')
 
         print(f"[DEBUG in main.py]   Raw job_title: {job_title}")
         print(f"[DEBUG in main.py]   Raw salary: {salary}")
         print(f"[DEBUG in main.py]   Raw location: {location}")
         print(f"[DEBUG in main.py]   Raw qualifications: {qualifications}")
-        # print(f"[DEBUG in main.py]   Raw full_text_content (first 100): {full_text_content[:100] if full_text_content else 'N/A'}...")
 
         print("\nText extracted from dynamic HTML (including mock OCR).")
 
-        # The integrate_all_text function might be less relevant now if full_text_content is comprehensive
-        # and other fields are passed separately. For now, we use scraper's 'full_text' as 'full_text_content'.
-        # job_post_text = integrate_all_text(extracted_info) # Commented out as requested
-
-        if full_text_content: # Check full_text_content instead of the old job_post_text
+        if full_text_content:
             specific_fields_extracted = any([job_title, salary, location, qualifications])
             if not specific_fields_extracted:
-                print("\n  Note from main.py: Some specific fields (job title, salary, etc.) were NOT found by the parser, using 'N/A' in prompt where applicable.")
+                # This condition might be too strict if job_title has fallback text.
+                # A more nuanced check might be if salary, location, AND qualifications are all None.
+                if salary is None and location is None and qualifications is None:
+                    print("\n  Note from main.py: Core specific fields (salary, location, qualifications) were NOT found by the parser.")
+                else:
+                    print("\n  Note from main.py: Some specific fields WERE found by the parser (job_title might be a fallback).")
             else:
-                print("\n  Note from main.py: Specific fields (job title, salary, etc.) WERE found by the parser.")
+                print("\n  Note from main.py: All specific fields (job title, salary, etc.) WERE found by the parser according to 'any' check including job_title.")
             print(f"\nUsing full_text_content (first 300 chars for prompt RAG base):\n{full_text_content[:300]}...")
         else:
             print("No 'full_text' was extracted from the dynamic HTML.")
-            # Provide a default placeholder if critical for Phase 2
             full_text_content = "求人情報の内容が取得できませんでした（Selenium HTMLは取得成功、テキスト抽出失敗）。これはプレースホルダーのテキストです。"
             print("Using placeholder full_text_content for Phase 2.")
+            # Also set specific fields to None or "N/A" if full_text_content failed this badly
+            job_title, salary, location, qualifications = "N/A", "N/A", "N/A", "N/A"
 
     else:
         print(f"Failed to fetch dynamic HTML content from {sample_url} using Selenium.")
         full_text_content = "求人情報URLからのHTML取得に失敗しました（Selenium）。これはプレースホルダーのテキストです。"
         print("Using placeholder full_text_content for Phase 2.")
+        job_title, salary, location, qualifications = "N/A", "N/A", "N/A", "N/A"
+
 
     # --- Phase 2: AI Review Logic ---
     print("\n--- Phase 2: AI Review Logic ---")
@@ -89,6 +98,8 @@ if __name__ == "__main__":
         if not full_text_content:
              print("Full text content is empty, review might not be meaningful but proceeding with a default empty text...")
              full_text_content = "内容が空の求人原稿です。"
+             job_title, salary, location, qualifications = "N/A", "N/A", "N/A", "N/A"
+
 
         print("\nPerforming review on the job post data...")
         review_result = perform_review(
@@ -97,7 +108,7 @@ if __name__ == "__main__":
             salary=salary,
             location=location,
             qualifications=qualifications,
-            full_text_content=full_text_content, # This is the 'full_text' from scraper
+            full_text_content=full_text_content,
             rulebook_vector_db=rulebook_vector_db
         )
 

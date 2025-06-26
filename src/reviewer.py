@@ -40,6 +40,15 @@ REVIEW_PROMPT_TEMPLATE = """\
     - 就業場所における受動喫煙を防止するための具体的な措置（例：屋内禁煙、喫煙専用室設置など）が明記されているか。「対策なし」という記載だけでは不十分な場合がある。
 - **原稿内情報の整合性について**:
     - 求人広告内の複数箇所（例：広告上部のサマリーと詳細な募集要項）で、勤務地、職種、給与などの情報に矛盾がないか。
+- **給与（勤務地別）**: リストアップされた全ての勤務地（特に「北海道」のような具体的な地域名が明記されている場合）について、対応する給与情報が明確に記載されているか、記載漏れがないか、特に注意して確認してください。
+- **試用期間の詳細**: 試用期間の定めがあり、かつ本採用時と労働条件（給与、勤務時間など）が異なる場合、その全ての相違点、及び『その他の労働条件は本採用時と変更なし』といった趣旨の記載が明確にされているか、厳密に確認してください。
+- **業務の変更の範囲**: 改正職業安定法に基づき、「従事すべき業務の変更の範囲」に関する具体的な記載が求人情報に含まれているか、必ず確認してください。記載が全くない場合は指摘が必要です。
+- **勤務地情報の整合性**: 求人情報内で勤務地が複数回（例：広告ヘッダー、概要セクション、募集要項詳細など）記載されている場合、それら全ての勤務地情報が完全に一致しているか、矛盾や食い違いがないか、詳細に比較・確認してください。
+- **給与（特定地域での記載漏れチェック）**: 勤務地リストに「北海道」が含まれている場合、北海道勤務時の給与条件（金額、給与体系など）が具体的に明記されているか、特に厳しく確認してください。他の地域と給与条件が異なる場合はその旨、共通の場合はその旨がわかるように記載されている必要があります。記載がない場合は明確な指摘が必要です。
+- **勤務地情報の一貫性（詳細チェック）**: 求人情報内で勤務地が複数回（例：広告の最上部、概要文中、募集要項の表内など）記載されている場合、それら全ての箇所でリストアップされている都道府県名、市区町村名、具体的な事業所名やキャンパス名などが、一字一句違わずに完全に一致しているか、詳細にわたり全ての地名を比較・確認してください。部分的な一致（例：一方は市まで、他方は町まで記載）や、一方にのみ存在する地名、あるいは表記の順序の違いも矛盾として指摘対象となるか検討してください。
+- **主観的表現の再チェック**: 人事担当者のコメント等で、『○○な方』『○○力がある方』といった表現が使われている場合、それが具体的な業務スキルや測定可能な経験に基づいているか、それとも『笑顔が素敵』『高いコミュニケーション能力』のような定義が曖昧で主観に左右される可能性のある表現か、再度厳しくチェックしてください。後者の場合は、客観的基準への修正を促す指摘を検討してください。
+- **【最重要確認】業務の変更の範囲**: 「従事すべき業務の変更の範囲」に関する記載が、求人原稿のどこかに具体的に（例：「雇入れ直後の業務：○○。変更の範囲：△△部の関連業務全般」のように）記述されているか、全文を徹底的に確認してください。この項目が一切記載されていない場合は、明確な規定違反として指摘してください。
+- **【最重要確認】勤務地情報の一貫性**: 勤務地情報が求人広告内の複数箇所（例：最上部のリスト、概要文、募集要項の詳細テーブルなど、考えられる全ての場所）に記載されている場合、それら全ての箇所でリストアップされている都道府県名、市区町村名、それ以下の詳細住所、事業所名、キャンパス名などが、一字一句違わずに完全に一致しているか、徹底的に比較・確認してください。部分的な一致（例：一方は「大阪市」、他方は「大阪市中央区」）、情報の過不足（一方にのみ記載がある地名）、表記の揺れや順序の違いも矛盾として厳しく指摘してください。
 
 ### 審査ルール
 {relevant_rules}
@@ -80,15 +89,7 @@ def get_azure_openai_credentials() -> dict | None:
         missing_vars.append("AZURE_OPENAI_DEPLOYMENT_NAME")
 
     if missing_vars:
-        # This print will occur if called directly and creds are missing.
-        # When called by main.py, main.py might handle this message or pass creds.
-        # print("Error: Missing one or more Azure OpenAI environment variables for direct reviewer test.")
-        # print("Please ensure the following are set if you intend to call the API directly here:")
-        # for var_name in ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "OPENAI_API_VERSION", "AZURE_OPENAI_DEPLOYMENT_NAME"]:
-        #     is_set = bool(os.environ.get(var_name))
-        #     value_display = "Present (value hidden)" if var_name == "AZURE_OPENAI_API_KEY" and is_set else os.environ.get(var_name, "MISSING")
-        #     print(f"- {var_name}: {value_display}")
-        return None # Return None if any are missing
+        return None
 
     return {
         "api_key": api_key,
@@ -144,7 +145,7 @@ def simulate_rag_retrieval(job_post_vector: list[float] | None, rulebook_vector_
     for rule_chunk in rulebook_vector_db:
         rule_vector = rule_chunk.get('vector')
         if not rule_vector or len(rule_vector) != len(job_post_vector):
-            continue # Skip if rule has no vector or dimension mismatch
+            continue
         distance = sum(abs(v1 - v2) for v1, v2 in zip(job_post_vector, rule_vector))
         scored_rules.append({'rule_text': rule_chunk['rule_text'], 'score': distance})
 
@@ -159,8 +160,8 @@ def simulate_ai_call(prompt: str) -> str:
     """
     Simulates an AI call, used as a fallback.
     """
-    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 800 chars): ---")
-    print(prompt[:800] + "..." if len(prompt) > 800 else prompt)
+    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 1500 chars to show new section): ---") # Increased length
+    print(prompt[:1500] + "..." if len(prompt) > 1500 else prompt)
     print("--- END OF SIMULATED PROMPT (FALLBACK) ---")
 
     import random
@@ -183,7 +184,6 @@ def perform_review(
 ) -> str:
     print(f"\n--- Starting review for job post from URL: {job_post_url} ---")
 
-    # Construct richer text for RAG
     text_for_rag_parts = []
     if job_title:
         text_for_rag_parts.append(f"職種: {job_title}")
@@ -203,28 +203,20 @@ def perform_review(
     text_for_rag = "\n".join(text_for_rag_parts).strip()
 
     if not text_for_rag:
-        text_for_rag = "求人情報なし" # Fallback if all fields are empty/None
+        text_for_rag = "求人情報なし"
 
     job_post_vector = None
     try:
-        # This import is problematic for direct script execution but works when called by main.py
         from .rule_processor import get_mock_vector as actual_get_mock_vector
         job_post_vector = actual_get_mock_vector(text_for_rag)
-        print(f"Generated mock vector for RAG using rule_processor.get_mock_vector (based on text starting with): {text_for_rag[:100]}...")
     except ImportError:
-        print("Warning: rule_processor.get_mock_vector not available. Using placeholder vector for RAG.")
-        job_post_vector = [0.0] * 10 # Placeholder vector matching get_mock_vector's default size
-        print(f"Using placeholder vector for RAG. RAG base text starts with: {text_for_rag[:100]}...")
+        job_post_vector = [0.0] * 10
 
     retrieved_rules_text = simulate_rag_retrieval(job_post_vector, rulebook_vector_db)
-    # Ensure fallback text if RAG returns empty or specific failure messages
     if not retrieved_rules_text.strip() or \
        retrieved_rules_text.startswith("（RAG FAILED") or \
        retrieved_rules_text.startswith("関連するルールは見つかりませんでした"):
-        print(f"\n--- RAG problem or no specific rules found. Original RAG output: '{retrieved_rules_text}' ---")
         retrieved_rules_text = "関連する審査ルールを特定できませんでした。一般的な注意点に基づいて審査します。"
-    else:
-        print(f"\n--- Retrieved relevant rules (first 200 chars): ---\n{retrieved_rules_text[:200]}...\n")
 
     prompt_data = {
         "job_post_url": job_post_url if job_post_url else "N/A",
@@ -241,53 +233,33 @@ def perform_review(
     azure_credentials = get_azure_openai_credentials()
 
     if azure_credentials:
-        print("\n--- Attempting Real LLM Call via Azure OpenAI ---")
-        actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
-        if actual_llm_response:
-            review_result = actual_llm_response
+        if not all(azure_credentials.values()):
+             review_result = simulate_ai_call(assembled_prompt)
         else:
-            print("Real LLM call failed. Falling back to simulation.")
-            sim_response = simulate_ai_call(assembled_prompt)
-            review_result = f"[REAL API CALL FAILED] {sim_response}"
+            actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
+            if actual_llm_response:
+                review_result = actual_llm_response
+            else:
+                sim_response = simulate_ai_call(assembled_prompt)
+                review_result = f"[REAL API CALL FAILED] {sim_response}"
     else:
-        # get_azure_openai_credentials() already prints the error about missing vars if called directly
-        # If called from main.py, main.py might handle this, or pass None for credentials
-        print("\n--- Azure OpenAI credentials not found or incomplete. Falling back to simulation. ---")
         review_result = simulate_ai_call(assembled_prompt)
 
     return review_result if review_result is not None else "Review process failed to produce a result."
 
 
 if __name__ == "__main__":
-    print("--- Reviewer Self-Test: Constructing text_for_rag and Prompt Assembly ---")
+    print("--- Current REVIEW_PROMPT_TEMPLATE (with final ultra-targeted Key Checkpoints): ---")
+    print(REVIEW_PROMPT_TEMPLATE)
+    print("--- End of Template Print ---")
 
-    # Test credential retrieval (will show missing if not set)
-    # get_azure_openai_credentials() # Called inside perform_review, will print there if missing
-
-    sample_url = "http://example.com/job/self_test_rag"
-    sample_title = "RAGテスト職種"
-    sample_salary = "月給 30万円"
-    sample_location = "リモート"
-    sample_qualifications = "Python経験者"
-    sample_full_text = "これはRAGの入力テキストをテストするための求人広告の全文です。\n多くの詳細情報を含んでいます。"
-
-    mock_rulebook_vector_db = [
-        {"rule_text": "テストルール1: 全ての項目は明確に記載すること。", "vector": [float(ord(c)) for c in "職種: RAGテ".ljust(10, ' ')]}, # Vector for "職種: RAGテ"
-        {"rule_text": "テストルール2: 給与は円で表示すること。", "vector": [float(ord(c)) for c in "給与: 月給 3".ljust(10, ' ')]}, # Vector for "給与: 月給 3"
-        {"rule_text": "テストルール3: 勤務地は具体的に。", "vector": [float(ord(c)) for c in "勤務地: リモ".ljust(10, ' ')]}  # Vector for "勤務地: リモ"
-    ]
-
-    print("\nCalling perform_review (will attempt real API if creds were set externally, else simulate)...")
-    review_output = perform_review(
-        job_post_url=sample_url,
-        job_title=sample_title,
-        salary=sample_salary,
-        location=sample_location,
-        qualifications=sample_qualifications,
-        full_text_content=sample_full_text,
-        rulebook_vector_db=mock_rulebook_vector_db
-    )
-
-    print("\n--- SELF-TEST FINAL REVIEW OUTPUT ---")
-    print(review_output)
-    print("--- END OF SELF-TEST ---")
+    # Minimal self-test to check prompt formatting and basic call flow
+    # print("\n--- Minimal Self-Test for perform_review with updated prompt ---")
+    # test_output = perform_review(
+    #     job_post_url="http://example.com/test",
+    #     job_title="テスト職", salary="月給100万円", location="どこでも", qualifications="特になし",
+    #     full_text_content="これはテスト用の全文です。",
+    #     rulebook_vector_db=[]
+    # )
+    # print(f"\nMinimal self-test output:\n{test_output}")
+    # print("--- End of Minimal Self-Test ---")

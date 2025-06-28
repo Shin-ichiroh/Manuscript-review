@@ -89,6 +89,9 @@ def get_azure_openai_credentials() -> dict | None:
         missing_vars.append("AZURE_OPENAI_DEPLOYMENT_NAME")
 
     if missing_vars:
+        # This function is called by perform_review, which has its own user-facing error messages.
+        # So, this print is more for debugging if needed directly.
+        # print(f"Debug: get_azure_openai_credentials found missing vars: {missing_vars}")
         return None
 
     return {
@@ -102,7 +105,7 @@ def call_actual_llm_api(prompt_text: str, credentials: dict, max_tokens: int = 1
     """
     Calls the Azure OpenAI API to get a completion for the given prompt.
     """
-    print("\nAttempting to call Azure OpenAI API...")
+    print("\n[call_actual_llm_api] INFO: Attempting to call Azure OpenAI API...")
 
     try:
         client = AzureOpenAI(
@@ -110,13 +113,17 @@ def call_actual_llm_api(prompt_text: str, credentials: dict, max_tokens: int = 1
             azure_endpoint=credentials["azure_endpoint"],
             api_version=credentials["api_version"]
         )
-        print("AzureOpenAI client initialized successfully.")
+        # print("[call_actual_llm_api] DEBUG: AzureOpenAI client initialized successfully.")
     except Exception as e:
-        print(f"Error initializing AzureOpenAI client: {e}")
+        print("[call_actual_llm_api] ERROR: Error initializing AzureOpenAI client.")
+        print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}")
+        print(f"[call_actual_llm_api] Exception Args: {e.args}")
+        print(f"[call_actual_llm_api] Exception Str: {str(e)}")
+        print("-" * 50)
         return None
 
     try:
-        print(f"Sending request to Azure OpenAI: deployment='{credentials['deployment_name']}', max_tokens={max_tokens}, temperature={temperature}")
+        print(f"[call_actual_llm_api] DEBUG: Attempting client.chat.completions.create() with deployment_name='{credentials.get('deployment_name')}'")
         chat_completion = client.chat.completions.create(
             model=credentials["deployment_name"],
             messages=[
@@ -127,11 +134,21 @@ def call_actual_llm_api(prompt_text: str, credentials: dict, max_tokens: int = 1
         )
 
         response_content = chat_completion.choices[0].message.content
-        print("Azure OpenAI API call successful.")
+        print("[call_actual_llm_api] INFO: Azure OpenAI API call successful.")
         return response_content
 
     except Exception as e:
-        print(f"Error during Azure OpenAI API call: {e}")
+        print("-" * 50)
+        print("[call_actual_llm_api] ERROR: An exception occurred during Azure OpenAI API call.")
+        print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}")
+        print(f"[call_actual_llm_api] Exception Args: {e.args}")
+        print(f"[call_actual_llm_api] Exception Str: {str(e)}")
+
+        if hasattr(e, 'http_status'):
+            print(f"[call_actual_llm_api] HTTP Status: {e.http_status}")
+        if hasattr(e, 'code'):
+            print(f"[call_actual_llm_api] Error Code: {e.code}")
+        print("-" * 50)
         return None
 
 def simulate_rag_retrieval(job_post_vector: list[float] | None, rulebook_vector_db: list[dict], num_relevant_rules: int = 3) -> str:
@@ -160,9 +177,9 @@ def simulate_ai_call(prompt: str) -> str:
     """
     Simulates an AI call, used as a fallback.
     """
-    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 1500 chars to show new section): ---") # Increased length
-    print(prompt[:1500] + "..." if len(prompt) > 1500 else prompt)
-    print("--- END OF SIMULATED PROMPT (FALLBACK) ---")
+    # print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 1500 chars): ---")
+    # print(prompt[:1500] + "..." if len(prompt) > 1500 else prompt)
+    # print("--- END OF SIMULATED PROMPT (FALLBACK) ---")
 
     import random
     if random.random() < 0.5:
@@ -182,7 +199,7 @@ def perform_review(
     full_text_content: str | None,
     rulebook_vector_db: list[dict]
 ) -> str:
-    print(f"\n--- Starting review for job post from URL: {job_post_url} ---")
+    # print(f"\n--- Starting review for job post from URL: {job_post_url} ---")
 
     text_for_rag_parts = []
     if job_title:
@@ -233,33 +250,42 @@ def perform_review(
     azure_credentials = get_azure_openai_credentials()
 
     if azure_credentials:
-        if not all(azure_credentials.values()):
-             review_result = simulate_ai_call(assembled_prompt)
+        # print("\n--- Attempting Real LLM Call via Azure OpenAI ---") # Moved to call_actual_llm_api
+        actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
+        if actual_llm_response:
+            review_result = actual_llm_response
         else:
-            actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
-            if actual_llm_response:
-                review_result = actual_llm_response
-            else:
-                sim_response = simulate_ai_call(assembled_prompt)
-                review_result = f"[REAL API CALL FAILED] {sim_response}"
+            print("[perform_review] INFO: Real LLM call failed. Falling back to simulation.")
+            sim_response = simulate_ai_call(assembled_prompt)
+            review_result = f"[REAL API CALL FAILED] {sim_response}"
     else:
+        print("[perform_review] INFO: Azure OpenAI credentials not found or incomplete. Falling back to simulation.")
         review_result = simulate_ai_call(assembled_prompt)
 
     return review_result if review_result is not None else "Review process failed to produce a result."
 
 
 if __name__ == "__main__":
-    print("--- Current REVIEW_PROMPT_TEMPLATE (with final ultra-targeted Key Checkpoints): ---")
-    print(REVIEW_PROMPT_TEMPLATE)
-    print("--- End of Template Print ---")
+    print("--- Reviewer.py direct execution test ---")
+    print("--- Testing Azure OpenAI Credential Retrieval ---")
+    credentials = get_azure_openai_credentials()
 
-    # Minimal self-test to check prompt formatting and basic call flow
-    # print("\n--- Minimal Self-Test for perform_review with updated prompt ---")
-    # test_output = perform_review(
-    #     job_post_url="http://example.com/test",
-    #     job_title="テスト職", salary="月給100万円", location="どこでも", qualifications="特になし",
-    #     full_text_content="これはテスト用の全文です。",
-    #     rulebook_vector_db=[]
-    # )
-    # print(f"\nMinimal self-test output:\n{test_output}")
-    # print("--- End of Minimal Self-Test ---")
+    if credentials:
+        print("\nAzure OpenAI credentials retrieved successfully for direct test:")
+        print(f"  API Key: Present (value hidden)")
+        print(f"  Azure Endpoint: {credentials['azure_endpoint']}")
+        print(f"  API Version: {credentials['api_version']}")
+        print(f"  Deployment Name: {credentials['deployment_name']}")
+
+        sample_test_prompt = "Translate 'Hello, world.' to French." # Corrected sample prompt
+        print(f"\nSending sample prompt to LLM: '{sample_test_prompt}'")
+        response = call_actual_llm_api(sample_test_prompt, credentials, max_tokens=50, temperature=0.3)
+
+        if response:
+            print(f"\nLLM Response:\n{response}")
+        else:
+            print("\nLLM call (direct test) failed or returned no response.")
+    else:
+        print("\nAzure OpenAI credentials NOT FOUND for direct test. LLM call will be skipped.")
+        print("Please set environment variables (AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT, OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME) for a full test of call_actual_llm_api.")
+    print("--- End of Reviewer.py direct execution test ---")

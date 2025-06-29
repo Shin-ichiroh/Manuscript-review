@@ -31,24 +31,28 @@ REVIEW_PROMPT_TEMPLATE = """\
     - 複数の勤務地が記載されている場合、勤務地ごとの給与体系が明確に示されているか、あるいは全勤務地共通の給与である旨が明記されているか。勤務地のリストと給与情報の間に矛盾や記載漏れがないか。
 - **試用期間について**:
     - 試用期間が設定されており、かつ本採用時と労働条件（給与等）が異なる場合、1. 異なる条件の内容、2. それ以外の条件に変更はない旨、の両方が明記されているか。
-- **改正職業安定法に基づく明示事項**:
-    - 「従事すべき業務の変更の範囲」が具体的に記載されているか。
+# - **改正職業安定法に基づく明示事項**: # Superseded by a 【最重要確認】 item below
+#     - 「従事すべき業務の変更の範囲」が具体的に記載されているか。
 - **差別的表現・不適切な表現について**:
     - 応募者の出身地、居住地、性別、年齢（法令で許可される場合を除く）を不当に限定する表現（例：「○○県出身者歓迎」）がないか。
     - 「笑顔が素敵」「明るい性格」のような、応募者の性格や容姿に関する主観的な表現や、業務遂行能力と直接関連しない特性を求める記述がないか。もしあれば、客観的なスキルや経験に基づく表現への修正を提案すること。
 - **受動喫煙対策について**:
     - 就業場所における受動喫煙を防止するための具体的な措置（例：屋内禁煙、喫煙専用室設置など）が明記されているか。「対策なし」という記載だけでは不十分な場合がある。
-- **原稿内情報の整合性について**:
+- **原稿内情報の整合性について**: # General consistency check
     - 求人広告内の複数箇所（例：広告上部のサマリーと詳細な募集要項）で、勤務地、職種、給与などの情報に矛盾がないか。
 - **給与（勤務地別）**: リストアップされた全ての勤務地（特に「北海道」のような具体的な地域名が明記されている場合）について、対応する給与情報が明確に記載されているか、記載漏れがないか、特に注意して確認してください。
 - **試用期間の詳細**: 試用期間の定めがあり、かつ本採用時と労働条件（給与、勤務時間など）が異なる場合、その全ての相違点、及び『その他の労働条件は本採用時と変更なし』といった趣旨の記載が明確にされているか、厳密に確認してください。
-- **業務の変更の範囲**: 改正職業安定法に基づき、「従事すべき業務の変更の範囲」に関する具体的な記載が求人情報に含まれているか、必ず確認してください。記載が全くない場合は指摘が必要です。
-- **勤務地情報の整合性**: 求人情報内で勤務地が複数回（例：広告ヘッダー、概要セクション、募集要項詳細など）記載されている場合、それら全ての勤務地情報が完全に一致しているか、矛盾や食い違いがないか、詳細に比較・確認してください。
+# - **業務の変更の範囲**: 改正職業安定法に基づき、「従事すべき業務の変更の範囲」に関する具体的な記載が求人情報に含まれているか、必ず確認してください。記載が全くない場合は指摘が必要です。 # Superseded
+# - **勤務地情報の整合性**: 求人情報内で勤務地が複数回（例：広告ヘッダー、概要セクション、募集要項詳細など）記載されている場合、それら全ての勤務地情報が完全に一致しているか、矛盾や食い違いがないか、詳細に比較・確認してください。 # Superseded
 - **給与（特定地域での記載漏れチェック）**: 勤務地リストに「北海道」が含まれている場合、北海道勤務時の給与条件（金額、給与体系など）が具体的に明記されているか、特に厳しく確認してください。他の地域と給与条件が異なる場合はその旨、共通の場合はその旨がわかるように記載されている必要があります。記載がない場合は明確な指摘が必要です。
 - **勤務地情報の一貫性（詳細チェック）**: 求人情報内で勤務地が複数回（例：広告の最上部、概要文中、募集要項の表内など）記載されている場合、それら全ての箇所でリストアップされている都道府県名、市区町村名、具体的な事業所名やキャンパス名などが、一字一句違わずに完全に一致しているか、詳細にわたり全ての地名を比較・確認してください。部分的な一致（例：一方は市まで、他方は町まで記載）や、一方にのみ存在する地名、あるいは表記の順序の違いも矛盾として指摘対象となるか検討してください。
 - **主観的表現の再チェック**: 人事担当者のコメント等で、『○○な方』『○○力がある方』といった表現が使われている場合、それが具体的な業務スキルや測定可能な経験に基づいているか、それとも『笑顔が素敵』『高いコミュニケーション能力』のような定義が曖昧で主観に左右される可能性のある表現か、再度厳しくチェックしてください。後者の場合は、客観的基準への修正を促す指摘を検討してください。
 - **【最重要確認】業務の変更の範囲**: 「従事すべき業務の変更の範囲」に関する記載が、求人原稿のどこかに具体的に（例：「雇入れ直後の業務：○○。変更の範囲：△△部の関連業務全般」のように）記述されているか、全文を徹底的に確認してください。この項目が一切記載されていない場合は、明確な規定違反として指摘してください。
-- **【最重要確認】勤務地情報の一貫性**: 勤務地情報が求人広告内の複数箇所（例：最上部のリスト、概要文、募集要項の詳細テーブルなど、考えられる全ての場所）に記載されている場合、それら全ての箇所でリストアップされている都道府県名、市区町村名、それ以下の詳細住所、事業所名、キャンパス名などが、一字一句違わずに完全に一致しているか、徹底的に比較・確認してください。部分的な一致（例：一方は「大阪市」、他方は「大阪市中央区」）、情報の過不足（一方にのみ記載がある地名）、表記の揺れや順序の違いも矛盾として厳しく指摘してください。
+- **【最重要・勤務地比較】**:
+    1. 求人広告の**全文から「勤務地」と明記された箇所を全て（最低でも2箇所以上）特定**してください。例えば、「広告ヘッダー部にある勤務地リスト」と「募集要項詳細の中の勤務地記述」などです。
+    2. 特定した各箇所から、記載されている**都道府県、市区町村、それ以下の地名（例：札幌、中央区）、事業所名、キャンパス名等を全て正確にリストアップ**してください。
+    3. これらのリスト間で、**地名が一字一句完全に一致しているか、厳密に比較**してください。
+    4. **比較の結果、一方のリストにしか存在しない地名がある場合（例：Aには「北海道」があるがBにはない）、詳細度が異なる場合（例：Aでは「大阪市」だがBでは「大阪市中央区」となっている）、または記載されている地名の順序が異なる場合（それが実質的な意味の違いを生む場合）は、勤務地情報に矛盾・不整合ありとして具体的に指摘してください。**（例：「広告ヘッダーの勤務地リストには『北海道』の記載があるが、募集要項詳細の勤務地リストには『北海道』の記載がないため不整合。」のように）
 
 ### 審査ルール
 {relevant_rules}
@@ -68,140 +72,61 @@ REVIEW_PROMPT_TEMPLATE = """\
 """
 
 def get_azure_openai_credentials() -> dict | None:
-    """
-    Retrieves Azure OpenAI API credentials from environment variables.
-    Returns:
-        A dictionary with credentials if all are found, otherwise None.
-    """
     api_key = os.environ.get("AZURE_OPENAI_API_KEY")
     azure_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
     api_version = os.environ.get("OPENAI_API_VERSION")
     deployment_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME")
-
-    # Check if all critical variables are present
-    # Renamed all_present to avoid confusion with the built-in all()
-    credentials_present = api_key and azure_endpoint and api_version and deployment_name
-
-    if not credentials_present:
-        # This new debug print is added here
-        print("[DEBUG get_azure_openai_credentials] CRITICAL: Path for missing ENV VARS reached. About to print detailed status and return None.")
-
-        # Construct and print the detailed error message
-        error_message_lines = [
-            "Error: Missing one or more Azure OpenAI environment variables.",
-            "Please ensure the following are set:"
-        ]
-        required_vars = {
-            "AZURE_OPENAI_API_KEY": api_key,
-            "AZURE_OPENAI_ENDPOINT": azure_endpoint,
-            "OPENAI_API_VERSION": api_version,
-            "AZURE_OPENAI_DEPLOYMENT_NAME": deployment_name
-        }
-        for var_name, var_value in required_vars.items():
-            status = "Present (value hidden)" if var_name == "AZURE_OPENAI_API_KEY" and var_value else (var_value if var_value else "MISSING")
-            error_message_lines.append(f"- {var_name}: {status}")
-
-        # Print the constructed error message (original behavior)
-        # This print might be too verbose if called multiple times by other functions that also report.
-        # Consider if only the calling function (e.g. perform_review or main) should print this.
-        # For now, keeping it as per original logic for this function.
-        # print("\n".join(error_message_lines)) # This was the original structure
-
-        # For this subtask, the request was to add a new print *before* the existing detailed print.
-        # The previous version of this function already had a detailed print for missing vars.
-        # Let's ensure the new debug line is printed, and the original detailed report is also printed.
-        # The original structure was slightly different, so I'll adapt.
-        # The original logic within this block was:
-        # print("Error: Missing one or more Azure OpenAI environment variables.")
-        # print("Please ensure the following are set:")
-        # for var_name in ["AZURE_OPENAI_API_KEY", ...]: print(f"- {var_name}: {status}")
-        # This is effectively what error_message_lines above does.
-        # So, the new print will be just before this block.
-        # My previous modification to this error printing made it a bit cleaner. I'll stick to that.
-        print("\n".join(error_message_lines)) # Print the detailed status
+    if not (api_key and azure_endpoint and api_version and deployment_name):
         return None
-
     return {
-        "api_key": api_key,
-        "azure_endpoint": azure_endpoint,
-        "api_version": api_version,
-        "deployment_name": deployment_name,
+        "api_key": api_key, "azure_endpoint": azure_endpoint,
+        "api_version": api_version, "deployment_name": deployment_name,
     }
 
 def call_actual_llm_api(prompt_text: str, credentials: dict, max_tokens: int = 1500, temperature: float = 0.7) -> str | None:
-    """
-    Calls the Azure OpenAI API to get a completion for the given prompt.
-    """
-    print("\n[call_actual_llm_api] INFO: Attempting to call Azure OpenAI API...")
-
     try:
         client = AzureOpenAI(
-            api_key=credentials["api_key"],
-            azure_endpoint=credentials["azure_endpoint"],
-            api_version=credentials["api_version"]
+            api_key=credentials["api_key"], azure_endpoint=credentials["azure_endpoint"], api_version=credentials["api_version"]
         )
     except Exception as e:
-        print("[call_actual_llm_api] ERROR: Error initializing AzureOpenAI client.")
-        print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}")
-        print(f"[call_actual_llm_api] Exception Args: {e.args}")
-        print(f"[call_actual_llm_api] Exception Str: {str(e)}")
-        print("-" * 50)
+        # print("[call_actual_llm_api] ERROR: Error initializing AzureOpenAI client.")
+        # print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}"); print(f"[call_actual_llm_api] Exception Args: {e.args}"); print(f"[call_actual_llm_api] Exception Str: {str(e)}"); print("-" * 50)
         return None
-
     try:
-        print(f"[call_actual_llm_api] DEBUG: Attempting client.chat.completions.create() with deployment_name='{credentials.get('deployment_name')}'")
+        # print(f"[call_actual_llm_api] DEBUG: Attempting client.chat.completions.create() with deployment_name='{credentials.get('deployment_name')}'")
         chat_completion = client.chat.completions.create(
-            model=credentials["deployment_name"],
-            messages=[
-                {"role": "user", "content": prompt_text}
-            ],
-            max_tokens=max_tokens,
-            temperature=temperature,
+            model=credentials["deployment_name"], messages=[{"role": "user", "content": prompt_text}],
+            max_tokens=max_tokens, temperature=temperature,
         )
-
-        response_content = chat_completion.choices[0].message.content
-        print("[call_actual_llm_api] INFO: Azure OpenAI API call successful.")
-        return response_content
-
+        # print("[call_actual_llm_api] INFO: Azure OpenAI API call successful.")
+        return chat_completion.choices[0].message.content
     except Exception as e:
-        print("-" * 50)
-        print("[call_actual_llm_api] ERROR: An exception occurred during Azure OpenAI API call.")
-        print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}")
-        print(f"[call_actual_llm_api] Exception Args: {e.args}")
-        print(f"[call_actual_llm_api] Exception Str: {str(e)}")
-
-        if hasattr(e, 'http_status'):
-            print(f"[call_actual_llm_api] HTTP Status: {e.http_status}")
-        if hasattr(e, 'code'):
-            print(f"[call_actual_llm_api] Error Code: {e.code}")
+        print("-" * 50); print("[call_actual_llm_api] ERROR: An exception occurred during Azure OpenAI API call.")
+        print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}"); print(f"[call_actual_llm_api] Exception Args: {e.args}"); print(f"[call_actual_llm_api] Exception Str: {str(e)}")
+        if hasattr(e, 'http_status'): print(f"[call_actual_llm_api] HTTP Status: {e.http_status}")
+        if hasattr(e, 'code'): print(f"[call_actual_llm_api] Error Code: {e.code}")
         print("-" * 50)
         return None
 
 def simulate_rag_retrieval(job_post_vector: list[float] | None, rulebook_vector_db: list[dict], num_relevant_rules: int = 3) -> str:
-    if job_post_vector is None:
-        return "（RAG FAILED: Mock vector generation skipped or failed）"
+    if job_post_vector is None: return "（RAG FAILED: Mock vector generation skipped or failed）"
     scored_rules = []
     for rule_chunk in rulebook_vector_db:
         rule_vector = rule_chunk.get('vector')
-        if not rule_vector or len(rule_vector) != len(job_post_vector):
-            continue
+        if not rule_vector or len(rule_vector) != len(job_post_vector): continue
         distance = sum(abs(v1 - v2) for v1, v2 in zip(job_post_vector, rule_vector))
         scored_rules.append({'rule_text': rule_chunk['rule_text'], 'score': distance})
-    if not scored_rules:
-        return "関連するルールは見つかりませんでした（RAG DB 空またはベクトル不一致）。"
+    if not scored_rules: return "関連するルールは見つかりませんでした（RAG DB 空またはベクトル不一致）。"
     scored_rules.sort(key=lambda x: x['score'])
-    relevant_rules_texts = [chunk['rule_text'] for chunk in scored_rules[:num_relevant_rules]]
-    return "\n\n---\n\n".join(relevant_rules_texts)
+    return "\n\n---\n\n".join([chunk['rule_text'] for chunk in scored_rules[:num_relevant_rules]])
 
 def simulate_ai_call(prompt: str) -> str:
-    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 1500 chars): ---")
-    print(prompt[:1500] + "..." if len(prompt) > 1500 else prompt)
+    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 2000 chars to show new section): ---") # Increased length
+    print(prompt[:2000] + "..." if len(prompt) > 2000 else prompt)
     print("--- END OF SIMULATED PROMPT (FALLBACK) ---")
     import random
-    if random.random() < 0.5:
-        return "・**問題点がある箇所**: 給与セクション (シミュレーション fallback)\n・**問題の内容**: 最低賃金の明示方法に問題あり。(シミュレーション fallback)\n・**修正提案**: 適切な形式で記載してください。(シミュレーション fallback)"
-    else:
-        return "審査の結果、問題は見つかりませんでした。(シミュレーション fallback)"
+    if random.random() < 0.5: return "・**問題点がある箇所**: 給与セクション (シミュレーション fallback)\n・**問題の内容**: 最低賃金の明示方法に問題あり。(シミュレーション fallback)\n・**修正提案**: 適切な形式で記載してください。(シミュレーション fallback)"
+    else: return "審査の結果、問題は見つかりませんでした。(シミュレーション fallback)"
 
 def perform_review(
     job_post_url: str, job_title: str | None, salary: str | None, location: str | None,
@@ -237,34 +162,34 @@ def perform_review(
     review_result = None
     azure_credentials = get_azure_openai_credentials()
 
-    if azure_credentials: # This implies all necessary keys were found and non-empty
-        actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
-        if actual_llm_response:
-            review_result = actual_llm_response
+    if azure_credentials:
+        if not all(azure_credentials.values()):
+             review_result = simulate_ai_call(assembled_prompt)
         else:
-            print("[perform_review] INFO: Real LLM call failed. Falling back to simulation.")
-            sim_response = simulate_ai_call(assembled_prompt)
-            review_result = f"[REAL API CALL FAILED] {sim_response}"
+            actual_llm_response = call_actual_llm_api(assembled_prompt, azure_credentials)
+            if actual_llm_response:
+                review_result = actual_llm_response
+            else:
+                sim_response = simulate_ai_call(assembled_prompt)
+                review_result = f"[REAL API CALL FAILED] {sim_response}"
     else:
-        # get_azure_openai_credentials() would have printed the detailed missing vars if called directly.
-        # If called from here, it returns None silently if something is missing.
-        print("[perform_review] INFO: Azure OpenAI credentials not found or incomplete. Falling back to simulation.")
         review_result = simulate_ai_call(assembled_prompt)
 
     return review_result if review_result is not None else "Review process failed to produce a result."
 
 
 if __name__ == "__main__":
-    print("--- Reviewer.py direct execution: Testing credential messages ---")
+    print("--- Current REVIEW_PROMPT_TEMPLATE (with final, ultra-precise Key Checkpoints): ---")
+    print(REVIEW_PROMPT_TEMPLATE)
+    print("--- End of Template Print ---")
 
-    # This call will print the detailed missing variable list if any are missing,
-    # including the new DEBUG line.
-    retrieved_creds = get_azure_openai_credentials()
-    if not retrieved_creds:
-        print("\n[__main__] VERIFICATION: get_azure_openai_credentials returned None as expected (when no ENV VARS set).")
-    else:
-        # This case should not be hit in the sandbox without ENV VARS set by user.
-        print("\n[__main__] VERIFICATION: get_azure_openai_credentials returned credentials (unexpected in clean sandbox).")
-
-    # The rest of the test (calling perform_review) is omitted to keep focus on credential function.
-    print("--- End of Reviewer.py direct execution test ---")
+    # Minimal self-test to check prompt formatting and basic call flow
+    # print("\n--- Minimal Self-Test for perform_review with updated prompt ---")
+    # test_output = perform_review(
+    #     job_post_url="http://example.com/test",
+    #     job_title="テスト職", salary="月給100万円", location="どこでも", qualifications="特になし",
+    #     full_text_content="これはテスト用の全文です。",
+    #     rulebook_vector_db=[]
+    # )
+    # print(f"\nMinimal self-test output:\n{test_output}")
+    # print("--- End of Minimal Self-Test ---")

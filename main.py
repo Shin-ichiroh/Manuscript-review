@@ -1,3 +1,5 @@
+import argparse # For command-line argument parsing
+
 # Phase 1 imports
 from src.scraper import get_dynamic_html_with_selenium, extract_text_from_html
 
@@ -11,11 +13,20 @@ if __name__ == "__main__":
     # corresponding WebDriver (e.g., ChromeDriver) installed and accessible.
     # `webdriver-manager` (in requirements.txt) attempts to handle ChromeDriver automatically.
 
-    print("--- Starting Full Workflow Integration Test (with Selenium & Structured Data) ---")
+    parser = argparse.ArgumentParser(description="Analyze a job posting URL for potential issues.")
+    parser.add_argument(
+        "--url",
+        type=str,
+        default="https://www.gakujo.ne.jp/campus/company/employ/82098/?prv=ON&WINTYPE=%27SUB%27", # Default URL
+        help="URL of the job posting to analyze."
+    )
+    args = parser.parse_args()
+    sample_url = args.url  # Use the URL from command-line or default
+
+    print(f"--- Starting Full Workflow Integration Test (URL: {sample_url}) ---")
 
     # --- Phase 1: Data Acquisition ---
     print("\n--- Phase 1: Data Acquisition (using Selenium) ---")
-    sample_url = "https://www.gakujo.ne.jp/campus/company/employ/82098/?prv=ON&WINTYPE=%27SUB%27"
 
     job_post_url = sample_url
     job_title = None
@@ -24,21 +35,13 @@ if __name__ == "__main__":
     qualifications = None
     full_text_content = None
 
-    print(f"Fetching dynamic HTML from: {sample_url}")
-    html_content = get_dynamic_html_with_selenium(sample_url, wait_time=15)
+    print(f"Fetching dynamic HTML from: {job_post_url}") # Use job_post_url which is from sample_url
+    html_content = get_dynamic_html_with_selenium(job_post_url, wait_time=15)
 
     if html_content:
         print("Dynamic HTML content fetched successfully using Selenium.")
 
-        # Code for saving debug_main_run_page.html is now removed/commented out for cleanup.
-        # try:
-        #     with open("debug_main_run_page.html", "w", encoding="utf-8") as f:
-        #         f.write(html_content)
-        #     print("[DEBUG from main.py] Successfully saved fetched HTML to debug_main_run_page.html")
-        # except Exception as e:
-        #     print(f"[DEBUG from main.py] Error saving fetched HTML to debug_main_run_page.html: {e}")
-
-        extracted_info = extract_text_from_html(html_content, sample_url)
+        extracted_info = extract_text_from_html(html_content, job_post_url) # Pass job_post_url as base_url
 
         print("\n[DEBUG in main.py] Extracted Info Dictionary Check:")
         job_title = extracted_info.get('job_title')
@@ -57,8 +60,6 @@ if __name__ == "__main__":
         if full_text_content:
             specific_fields_extracted = any([job_title, salary, location, qualifications])
             if not specific_fields_extracted:
-                # This condition might be too strict if job_title has fallback text.
-                # A more nuanced check might be if salary, location, AND qualifications are all None.
                 if salary is None and location is None and qualifications is None:
                     print("\n  Note from main.py: Core specific fields (salary, location, qualifications) were NOT found by the parser.")
                 else:
@@ -70,11 +71,10 @@ if __name__ == "__main__":
             print("No 'full_text' was extracted from the dynamic HTML.")
             full_text_content = "求人情報の内容が取得できませんでした（Selenium HTMLは取得成功、テキスト抽出失敗）。これはプレースホルダーのテキストです。"
             print("Using placeholder full_text_content for Phase 2.")
-            # Also set specific fields to None or "N/A" if full_text_content failed this badly
             job_title, salary, location, qualifications = "N/A", "N/A", "N/A", "N/A"
 
     else:
-        print(f"Failed to fetch dynamic HTML content from {sample_url} using Selenium.")
+        print(f"Failed to fetch dynamic HTML content from {job_post_url} using Selenium.")
         full_text_content = "求人情報URLからのHTML取得に失敗しました（Selenium）。これはプレースホルダーのテキストです。"
         print("Using placeholder full_text_content for Phase 2.")
         job_title, salary, location, qualifications = "N/A", "N/A", "N/A", "N/A"
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
         print("\nPerforming review on the job post data...")
         review_result = perform_review(
-            job_post_url=job_post_url,
+            job_post_url=job_post_url, # This is the URL from argparse or default
             job_title=job_title,
             salary=salary,
             location=location,
@@ -115,4 +115,4 @@ if __name__ == "__main__":
         print("\n--- FINAL SIMULATED REVIEW RESULT (using structured data) ---")
         print(review_result)
 
-    print("\n--- Full Workflow Integration Test (with Selenium & Structured Data) Finished ---")
+    print(f"\n--- Full Workflow Integration Test (URL: {job_post_url}) Finished ---")

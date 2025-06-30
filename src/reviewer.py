@@ -31,28 +31,20 @@ REVIEW_PROMPT_TEMPLATE = """\
     - 複数の勤務地が記載されている場合、勤務地ごとの給与体系が明確に示されているか、あるいは全勤務地共通の給与である旨が明記されているか。勤務地のリストと給与情報の間に矛盾や記載漏れがないか。
 - **試用期間について**:
     - 試用期間が設定されており、かつ本採用時と労働条件（給与等）が異なる場合、1. 異なる条件の内容、2. それ以外の条件に変更はない旨、の両方が明記されているか。
-# - **改正職業安定法に基づく明示事項**: # Superseded by a 【最重要確認】 item below
-#     - 「従事すべき業務の変更の範囲」が具体的に記載されているか。
+- **改正職業安定法に基づく明示事項**:
+    - 「従事すべき業務の変更の範囲」が具体的に記載されているか。
 - **差別的表現・不適切な表現について**:
     - 応募者の出身地、居住地、性別、年齢（法令で許可される場合を除く）を不当に限定する表現（例：「○○県出身者歓迎」）がないか。
     - 「笑顔が素敵」「明るい性格」のような、応募者の性格や容姿に関する主観的な表現や、業務遂行能力と直接関連しない特性を求める記述がないか。もしあれば、客観的なスキルや経験に基づく表現への修正を提案すること。
 - **受動喫煙対策について**:
     - 就業場所における受動喫煙を防止するための具体的な措置（例：屋内禁煙、喫煙専用室設置など）が明記されているか。「対策なし」という記載だけでは不十分な場合がある。
-- **原稿内情報の整合性について**: # General consistency check
+- **原稿内情報の整合性について**:
     - 求人広告内の複数箇所（例：広告上部のサマリーと詳細な募集要項）で、勤務地、職種、給与などの情報に矛盾がないか。
-- **給与（勤務地別）**: リストアップされた全ての勤務地（特に「北海道」のような具体的な地域名が明記されている場合）について、対応する給与情報が明確に記載されているか、記載漏れがないか、特に注意して確認してください。
+- **給与（特定地域での記載漏れチェック）**: リストアップされた全ての勤務地（特に「北海道」のような具体的な地域名が明記されている場合）について、対応する給与情報が明確に記載されているか、記載漏れがないか、特に注意して確認してください。
 - **試用期間の詳細**: 試用期間の定めがあり、かつ本採用時と労働条件（給与、勤務時間など）が異なる場合、その全ての相違点、及び『その他の労働条件は本採用時と変更なし』といった趣旨の記載が明確にされているか、厳密に確認してください。
-# - **業務の変更の範囲**: 改正職業安定法に基づき、「従事すべき業務の変更の範囲」に関する具体的な記載が求人情報に含まれているか、必ず確認してください。記載が全くない場合は指摘が必要です。 # Superseded
-# - **勤務地情報の整合性**: 求人情報内で勤務地が複数回（例：広告ヘッダー、概要セクション、募集要項詳細など）記載されている場合、それら全ての勤務地情報が完全に一致しているか、矛盾や食い違いがないか、詳細に比較・確認してください。 # Superseded
-- **給与（特定地域での記載漏れチェック）**: 勤務地リストに「北海道」が含まれている場合、北海道勤務時の給与条件（金額、給与体系など）が具体的に明記されているか、特に厳しく確認してください。他の地域と給与条件が異なる場合はその旨、共通の場合はその旨がわかるように記載されている必要があります。記載がない場合は明確な指摘が必要です。
-- **勤務地情報の一貫性（詳細チェック）**: 求人情報内で勤務地が複数回（例：広告の最上部、概要文中、募集要項の表内など）記載されている場合、それら全ての箇所でリストアップされている都道府県名、市区町村名、具体的な事業所名やキャンパス名などが、一字一句違わずに完全に一致しているか、詳細にわたり全ての地名を比較・確認してください。部分的な一致（例：一方は市まで、他方は町まで記載）や、一方にのみ存在する地名、あるいは表記の順序の違いも矛盾として指摘対象となるか検討してください。
-- **主観的表現の再チェック**: 人事担当者のコメント等で、『○○な方』『○○力がある方』といった表現が使われている場合、それが具体的な業務スキルや測定可能な経験に基づいているか、それとも『笑顔が素敵』『高いコミュニケーション能力』のような定義が曖昧で主観に左右される可能性のある表現か、再度厳しくチェックしてください。後者の場合は、客観的基準への修正を促す指摘を検討してください。
-- **【最重要確認】業務の変更の範囲**: 「従事すべき業務の変更の範囲」に関する記載が、求人原稿のどこかに具体的に（例：「雇入れ直後の業務：○○。変更の範囲：△△部の関連業務全般」のように）記述されているか、全文を徹底的に確認してください。この項目が一切記載されていない場合は、明確な規定違反として指摘してください。
-- **【最重要・勤務地比較】**:
-    1. 求人広告の**全文から「勤務地」と明記された箇所を全て（最低でも2箇所以上）特定**してください。例えば、「広告ヘッダー部にある勤務地リスト」と「募集要項詳細の中の勤務地記述」などです。
-    2. 特定した各箇所から、記載されている**都道府県、市区町村、それ以下の地名（例：札幌、中央区）、事業所名、キャンパス名等を全て正確にリストアップ**してください。
-    3. これらのリスト間で、**地名が一字一句完全に一致しているか、厳密に比較**してください。
-    4. **比較の結果、一方のリストにしか存在しない地名がある場合（例：Aには「北海道」があるがBにはない）、詳細度が異なる場合（例：Aでは「大阪市」だがBでは「大阪市中央区」となっている）、または記載されている地名の順序が異なる場合（それが実質的な意味の違いを生む場合）は、勤務地情報に矛盾・不整合ありとして具体的に指摘してください。**（例：「広告ヘッダーの勤務地リストには『北海道』の記載があるが、募集要項詳細の勤務地リストには『北海道』の記載がないため不整合。」のように）
+- **業務の変更の範囲 (再確認)**: 改正職業安定法に基づき、「従事すべき業務の変更の範囲」に関する具体的な記載が求人情報に含まれているか、必ず確認してください。記載が全くない場合は指摘が必要です。
+- **勤務地情報の整合性 (P.3.1 version)**: 求人情報内で勤務地が複数回（例：広告ヘッダー、概要セクション、募集要項詳細など）記載されている場合、それら全ての勤務地情報が完全に一致しているか、矛盾や食い違いがないか、詳細に比較・確認してください。
+- **主観的表現の再チェック (P.3.1 version)**: 人事担当者のコメント等で、『○○な方』『○○力がある方』といった表現が使われている場合、それが具体的な業務スキルや測定可能な経験に基づいているか、それとも『笑顔が素敵』『高いコミュニケーション能力』のような定義が曖昧で主観に左右される可能性のある表現か、再度厳しくチェックしてください。後者の場合は、客観的基準への修正を促す指摘を検討してください。
 
 ### 審査ルール
 {relevant_rules}
@@ -89,16 +81,12 @@ def call_actual_llm_api(prompt_text: str, credentials: dict, max_tokens: int = 1
             api_key=credentials["api_key"], azure_endpoint=credentials["azure_endpoint"], api_version=credentials["api_version"]
         )
     except Exception as e:
-        # print("[call_actual_llm_api] ERROR: Error initializing AzureOpenAI client.")
-        # print(f"[call_actual_llm_api] Exception Type: {type(e).__name__}"); print(f"[call_actual_llm_api] Exception Args: {e.args}"); print(f"[call_actual_llm_api] Exception Str: {str(e)}"); print("-" * 50)
         return None
     try:
-        # print(f"[call_actual_llm_api] DEBUG: Attempting client.chat.completions.create() with deployment_name='{credentials.get('deployment_name')}'")
         chat_completion = client.chat.completions.create(
             model=credentials["deployment_name"], messages=[{"role": "user", "content": prompt_text}],
             max_tokens=max_tokens, temperature=temperature,
         )
-        # print("[call_actual_llm_api] INFO: Azure OpenAI API call successful.")
         return chat_completion.choices[0].message.content
     except Exception as e:
         print("-" * 50); print("[call_actual_llm_api] ERROR: An exception occurred during Azure OpenAI API call.")
@@ -121,8 +109,8 @@ def simulate_rag_retrieval(job_post_vector: list[float] | None, rulebook_vector_
     return "\n\n---\n\n".join([chunk['rule_text'] for chunk in scored_rules[:num_relevant_rules]])
 
 def simulate_ai_call(prompt: str) -> str:
-    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 2000 chars to show new section): ---") # Increased length
-    print(prompt[:2000] + "..." if len(prompt) > 2000 else prompt)
+    print("\n--- SIMULATING AI CALL (FALLBACK) WITH PROMPT (first 1800 chars): ---")
+    print(prompt[:1800] + "..." if len(prompt) > 1800 else prompt)
     print("--- END OF SIMULATED PROMPT (FALLBACK) ---")
     import random
     if random.random() < 0.5: return "・**問題点がある箇所**: 給与セクション (シミュレーション fallback)\n・**問題の内容**: 最低賃金の明示方法に問題あり。(シミュレーション fallback)\n・**修正提案**: 適切な形式で記載してください。(シミュレーション fallback)"
@@ -179,17 +167,6 @@ def perform_review(
 
 
 if __name__ == "__main__":
-    print("--- Current REVIEW_PROMPT_TEMPLATE (with final, ultra-precise Key Checkpoints): ---")
+    print("--- Current REVIEW_PROMPT_TEMPLATE (Reverted to P.2 + P.3.1 state): ---")
     print(REVIEW_PROMPT_TEMPLATE)
     print("--- End of Template Print ---")
-
-    # Minimal self-test to check prompt formatting and basic call flow
-    # print("\n--- Minimal Self-Test for perform_review with updated prompt ---")
-    # test_output = perform_review(
-    #     job_post_url="http://example.com/test",
-    #     job_title="テスト職", salary="月給100万円", location="どこでも", qualifications="特になし",
-    #     full_text_content="これはテスト用の全文です。",
-    #     rulebook_vector_db=[]
-    # )
-    # print(f"\nMinimal self-test output:\n{test_output}")
-    # print("--- End of Minimal Self-Test ---")

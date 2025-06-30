@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
-from urllib.parse import urlparse # Added for domain parsing
+from urllib.parse import urlparse
 
 # Selenium imports
 from selenium import webdriver
@@ -13,21 +13,27 @@ import os
 
 # Global dictionary for site-specific selectors
 SITE_SELECTORS = {
-    "gakujo.ne.jp": { # Key changed to match output of get_site_domain()
+    "gakujo.ne.jp": {
         "job_title": "dl.sep-text dt:-soup-contains('採用職種 ') + dd div span",
         "salary": "dl.sep-text dt:-soup-contains('給与') + dd div span",
         "location": "dl.sep-text dt:-soup-contains('勤務地') + dd div span",
         "qualifications": "dl.sep-text dt:-soup-contains('応募資格') + dd div span",
-        "full_text_area": None # For gakujo, we used soup.get_text() on the whole doc effectively
+        "full_text_area": None
     },
     "re-katsu.jp": {
-        "job_title": "span#lblWantedJobType", # Specific title for the role
-        "salary": "span#trSalary",      # This span contains <h3> and <p> with details. get_text() will grab all.
+        "job_title": "span#lblWantedJobType",
+        "salary": "span#trSalary",
         "location": "span#lblWorklocation",
-        "qualifications": "span#lblTalentedpeople", # This is for "求める人材"
-        "full_text_area": "section#onRec" # Main content area for the job posting
+        "qualifications": "span#lblTalentedpeople",
+        "full_text_area": "section#onRec"
+    },
+    "re-katsu30.jp": { # New entry for re-katsu30.jp
+        "job_title": "h2.recruitDetail__infoTitle",
+        "salary": "h3.recruitDetail__sectionSubTitle:-soup-contains('給与') + p.recruitDetail__sectionText",
+        "location": "h3.recruitDetail__sectionSubTitle:-soup-contains('勤務地') + p.recruitDetail__sectionText",
+        "qualifications": "h3.recruitDetail__sectionSubTitle:-soup-contains('求める人材') + p.recruitDetail__sectionText",
+        "full_text_area": "main.recruitDetail > article"
     }
-    # Add more site configurations here
 }
 
 def get_site_domain(url: str) -> str:
@@ -94,9 +100,6 @@ def perform_ocr_on_image(image_url: str) -> str:
     return f"Mock OCR text for {image_url}"
 
 def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -> dict[str, any]:
-    """
-    Extracts specific job details, full text, and image OCR based on site-specific selectors.
-    """
     soup = BeautifulSoup(html_content, "html.parser")
     data: dict[str, any] = {
         "job_title": None, "salary": None, "location": None, "qualifications": None,
@@ -109,7 +112,6 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         print(f"[extract_text_from_html] WARNING: No specific selectors found for domain '{site_domain}'. Falling back to generic full_text and image extraction.")
         data['full_text'] = soup.get_text(separator='\n', strip=True)
     else:
-        # Extract specific fields using site-specific selectors
         job_title_selector = selectors_for_site.get("job_title")
         if job_title_selector:
             job_title_tag = soup.select_one(job_title_selector)
@@ -118,54 +120,44 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         salary_selector = selectors_for_site.get("salary")
         if salary_selector:
             salary_tag = soup.select_one(salary_selector)
-            # For salary, location, qualifications on re-katsu, the selector targets a span
-            # which itself contains an <h3> (the label) and then <p> (the value).
-            # We want to exclude the <h3> from the get_text().
             if salary_tag:
-                # Remove the h3 tag before getting text if it's the re-katsu structure
-                if site_domain == "re-katsu.jp" and salary_tag.find("h3"):
+                # Specific handling for re-katsu.jp and re-katsu30.jp to remove <h3> label if present
+                if (site_domain == "re-katsu.jp" or site_domain == "re-katsu30.jp") and salary_tag.find("h3"):
                     salary_tag.find("h3").decompose()
                 data['salary'] = salary_tag.get_text(separator='\n', strip=True)
-            else:
-                data['salary'] = None
+            else: data['salary'] = None
 
         location_selector = selectors_for_site.get("location")
         if location_selector:
             location_tag = soup.select_one(location_selector)
             if location_tag:
-                if site_domain == "re-katsu.jp" and location_tag.find("h3"): # Assuming similar structure
+                if (site_domain == "re-katsu.jp" or site_domain == "re-katsu30.jp") and location_tag.find("h3"):
                     location_tag.find("h3").decompose()
                 data['location'] = location_tag.get_text(separator='\n', strip=True)
-            else:
-                data['location'] = None
+            else: data['location'] = None
 
         qualifications_selector = selectors_for_site.get("qualifications")
         if qualifications_selector:
             qualifications_tag = soup.select_one(qualifications_selector)
             if qualifications_tag:
-                if site_domain == "re-katsu.jp" and qualifications_tag.find("h3"): # Assuming similar structure
+                if (site_domain == "re-katsu.jp" or site_domain == "re-katsu30.jp") and qualifications_tag.find("h3"):
                     qualifications_tag.find("h3").decompose()
                 data['qualifications'] = qualifications_tag.get_text(separator='\n', strip=True)
-            else:
-                data['qualifications'] = None
+            else: data['qualifications'] = None
 
-        # Fallback for Job Title if specific selector fails
-        if not data['job_title']:
-            if site_domain == "www.gakujo.ne.jp":
+        if not data['job_title']: # Fallback logic for job_title
+            if site_domain == "gakujo.ne.jp":
                 title_tag_h1_company = soup.find('h1', class_='h1-company-name_inner')
                 if title_tag_h1_company: data['job_title'] = title_tag_h1_company.get_text(strip=True)
-            # General H1 fallback for any site if still no title (could be re-katsu's main title)
             if not data['job_title']:
-                 generic_h1 = soup.find('h1') # This might catch re-katsu's <span class="head-catchcopy"> inside <h1>
+                 generic_h1 = soup.find('h1')
                  if generic_h1:
-                     # For re-katsu, the h1 contains spans, we want the text of the specific one if possible
                      if site_domain == "re-katsu.jp" and generic_h1.find("span", class_="head-catchcopy"):
                          data['job_title'] = generic_h1.find("span", class_="head-catchcopy").get_text(separator='\n', strip=True)
-                     else:
-                         data['job_title'] = generic_h1.get_text(separator='\n', strip=True)
+                     # Add similar specific h1 fallback for re-katsu30.jp if its main title isn't caught by job_title_selector
+                     # For now, generic h1 text as a broad fallback
+                     else: data['job_title'] = generic_h1.get_text(separator='\n', strip=True)
 
-
-        # Full text extraction using specific area selector or fallback
         full_text_area_selector = selectors_for_site.get("full_text_area")
         full_text_content_area = None
         if full_text_area_selector:
@@ -173,10 +165,8 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
 
         if full_text_content_area:
             data['full_text'] = full_text_content_area.get_text(separator='\n', strip=True)
-        else:
-            data['full_text'] = soup.get_text(separator='\n', strip=True)
+        else: data['full_text'] = soup.get_text(separator='\n', strip=True)
 
-    # Image extraction (common for all sites)
     image_urls = extract_image_urls(html_content, base_url)
     for img_url in image_urls:
         data['image_ocr_texts'].append(perform_ocr_on_image(img_url))
@@ -195,7 +185,9 @@ def integrate_all_text(extracted_data: dict) -> str:
 
 if __name__ == "__main__":
     print("\n--- Testing Scraper with Multi-Site Selector Logic ---")
-    dynamic_url = "https://re-katsu.jp/career/company/recruit/57021/"
+    # Defaulting to re-katsu30.jp for this test, as its selectors were just added.
+    dynamic_url = "https://re-katsu30.jp/recruit/1465"
+    # dynamic_url = "https://re-katsu.jp/career/company/recruit/57021/"
     # dynamic_url = "https://www.gakujo.ne.jp/campus/company/employ/82098/?prv=ON&WINTYPE=%27SUB%27"
 
     print(f"Fetching dynamic HTML from: {dynamic_url}")

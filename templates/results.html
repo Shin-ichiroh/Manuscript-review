@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>審査結果 - 求人原稿AIエージェント</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        h1 { text-align: center; }
+        .result-section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9; }
+        .result-section h2 { margin-top: 0; font-size: 1.2em; color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
+        strong { font-weight: bold; color: #555; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background-color: #eee; padding: 10px; border-radius: 4px; font-family: monospace; }
+        .error { color: red; font-weight: bold; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>審査結果</h1>
+        <p><a href="{{ url_for('index') }}">別のURLを審査する</a></p>
+
+        {% if results %}
+            <div class="result-section">
+                <h2>処理対象URL</h2>
+                <p><a href="{{ results.job_post_url }}" target="_blank">{{ results.job_post_url }}</a></p>
+                <p><strong>検知されたドメイン:</strong> {{ results.site_domain | default('N/A', true) }}</p>
+            </div>
+
+            {% if results.error_message %}
+                <div class="result-section error">
+                    <h2>処理エラー</h2>
+                    <p>{{ results.error_message }}</p>
+                </div>
+            {% endif %}
+
+            <div class="result-section">
+                <h2>抽出された情報</h2>
+                <p><strong>職種:</strong><br><pre>{{ results.job_title | default('N/A', true) }}</pre></p>
+                <p><strong>給与:</strong><br><pre>{{ results.salary | default('N/A', true) }}</pre></p>
+                <p><strong>勤務地:</strong><br><pre>{{ results.location | default('N/A', true) }}</pre></p>
+                <p><strong>応募資格:</strong><br><pre>{{ results.qualifications | default('N/A', true) }}</pre></p>
+                <p><strong>全文テキスト (抜粋):</strong></p>
+                <pre>{{ (results.full_text_content[:300] + '...' if results.full_text_content and results.full_text_content|length > 300 else results.full_text_content) | default('N/A', true) }}</pre>
+                <p><strong>画像から抽出されたテキスト(OCR)数:</strong> {{ results.image_ocr_texts | length }}</p>
+            </div>
+
+            <div class="result-section">
+                <h2>AI審査結果</h2>
+                <pre>{{ results.review_result | default('審査結果なし', true) }}</pre>
+            </div>
+
+            <div class="result-section">
+                <h2>デバッグ情報</h2>
+                <p><strong>ルールブックのチャンク数:</strong> {{ results.rulebook_chunks_count }}</p>
+                <!-- Consider not showing all debug_messages by default in a real UI -->
+                <!--
+                <p><strong>詳細ログ (core_logic):</strong></p>
+                <pre>
+                {% for msg in results.debug_messages %}
+                {{ msg }}
+                {% endfor %}
+                </pre>
+                -->
+            </div>
+
+        {% else %}
+            <p>結果がありません。</p>
+        {% endif %}
+        <p><a href="{{ url_for('index') }}">別のURLを審査する</a></p>
+    </div>
+</body>
+</html>

@@ -3,3 +3,4 @@ beautifulsoup4
 selenium
 webdriver-manager
 openai~=1.0
+Flask~=3.0

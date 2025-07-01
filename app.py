@@ -1,21 +1,12 @@
-import os # Ensure os is imported for load_dotenv and sys.path logic
-from dotenv import load_dotenv # New import
+import os
+from dotenv import load_dotenv
 
-# Load environment variables from .env file if it exists
-# This should be one of the first things the app does.
-load_dotenv() # New call
+load_dotenv()
 
-# Add project root to sys.path for module resolution
-# This helps ensure `from src.module` imports work correctly
-# and also that relative imports within the `src` package work when called from app.py.
 import sys
 project_root = os.path.abspath(os.path.dirname(__file__))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-# src_path = os.path.join(project_root, "src") # If src itself needs to be a top-level for some reason
-# if src_path not in sys.path:
-#    sys.path.insert(0, src_path)
-
 
 from flask import Flask, render_template, request
 from src.core_logic import process_job_posting_url
@@ -46,6 +37,10 @@ def review():
     return "Invalid request method.", 405
 
 if __name__ == '__main__':
-    # Note: The sys.path modification is done above, outside the __main__ block,
-    # to ensure it's effective for all imports when app.py is run.
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Debug mode can be enabled by setting the FLASK_DEBUG environment variable to '1'
+    # For example: FLASK_DEBUG=1 python app.py
+    # The host and port are typically handled by Gunicorn in production.
+    # For local Flask dev server, it will default to localhost:5000.
+    # If external access is needed for local dev, user can set FLASK_RUN_HOST=0.0.0.0
+    # The sys.path modification is done above to be effective for all imports.
+    app.run()

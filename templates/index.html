@@ -4,25 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>求人原稿審査AIエージェント</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="url"] { width: 95%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px; }
-        input[type="submit"] { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        input[type="submit"]:hover { background-color: #0056b3; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>求人原稿審査AIエージェント</h1>
-        <form action="{{ url_for('review') }}" method="post">
+        <form action="{{ url_for('review') }}" method="post" id="review-form">
             <label for="url">審査する求人原稿のURL:</label>
-            <input type="url" id="url" name="url" required style="width: calc(100% - 22px);">
+            <input type="url" id="url" name="url" required placeholder="例: https://example.com/job-posting">
             <br>
-            <input type="submit" value="審査開始">
+            <button type="submit" id="submit-button">
+                審査開始
+                <span class="loader" id="loader"></span>
+            </button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('review-form').addEventListener('submit', function() {
+            var button = document.getElementById('submit-button');
+            var loader = document.getElementById('loader');
+            
+            button.disabled = true;
+            // To change button text, you might need a specific span for the text node.
+            // For example: button.querySelector('.button-text').textContent = "審査中...";
+            loader.style.display = 'inline-block';
+        });
+    </script>
 </body>
 </html>

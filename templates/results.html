@@ -52,7 +52,9 @@
 
             <div class="result-section">
                 <h2>AI審査結果</h2>
-                <pre>{{ results.review_result | default('審査結果なし', true) }}</pre>
+                <div class="review-output-formatted">
+                    {{ results.review_result | default('<p>審査結果なし</p>', true) | safe }}
+                </div>
             </div>
             
             {% if results.debug_messages and results.debug_messages|length > 0 %}

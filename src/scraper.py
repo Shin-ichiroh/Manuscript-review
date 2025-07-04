@@ -1,22 +1,29 @@
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import os
-import re
+import re 
+import time
+
+# Selenium imports
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 
 # Global dictionary for site-specific selectors
 SITE_SELECTORS = {
     "gakujo.ne.jp": {
-        # Primary job_title selector for gakujo.ne.jp is now handled by specific logic first
-        "job_title": "dl.sep-text dt:-soup-contains('採用職種 ') + dd div span", # Kept as a fallback if specific logic fails
+        "job_title": "dl.sep-text dt:-soup-contains('採用職種 ') + dd div span", 
         "salary": "dl.sep-text dt:-soup-contains('給与') + dd div span",
         "location": "dl.sep-text dt:-soup-contains('勤務地') + dd div span",
         "qualifications": "dl.sep-text dt:-soup-contains('応募資格') + dd div span",
-        "full_text_area": None 
+        "full_text_area": "div.sep__detail__contents" # ★★★ この行を追加/更新 ★★★
     },
     "re-katsu.jp": {
-        "job_title": "span#lblWantedJobType",
+        "job_title": "span#lblWantedJobType", # This is Pattern A for re-katsu
+        # Pattern B for re-katsu (upper page job title) will be handled by a specific selector in the code
         "salary": "span#trSalary",
         "location": "span#lblWorklocation",
         "qualifications": "span#lblTalentedpeople",
@@ -32,7 +39,6 @@ SITE_SELECTORS = {
 }
 
 def get_site_domain(url: str) -> str:
-    """Extracts the domain (e.g., 'example.com') from a URL."""
     try:
         parsed_url = urlparse(url)
         domain = parsed_url.netloc
@@ -43,19 +49,91 @@ def get_site_domain(url: str) -> str:
         return ""
 
 def get_static_html_with_requests(url: str) -> str | None:
-    """Fetches HTML content from a URL using requests (static fetch)."""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36'
     }
     try:
-        print(f"[scraper] Fetching static HTML from: {url}")
+        print(f"[scraper] Fetching static HTML from: {url} (using requests)")
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        print("[scraper] Static HTML content fetched successfully.")
+        print("[scraper] Static HTML content fetched successfully (requests).")
         return response.text
     except requests.exceptions.RequestException as e:
         print(f"[scraper] Error fetching static HTML using Requests: {e}")
         return None
+
+def get_dynamic_html_with_selenium(url: str, wait_time: int = 10) -> str | None:
+    driver = None
+    print(f"[scraper_selenium] Attempting to fetch dynamic HTML from: {url}")
+    try:
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        
+        print("[scraper_selenium] Chrome options set.")
+        try:
+            print("[scraper_selenium] Attempting to start ChromeDriver via ChromeDriverManager...")
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            print("[scraper_selenium] ChromeDriver started via ChromeDriverManager successfully.")
+        except Exception as e_manager:
+            print(f"[scraper_selenium] ChromeDriverManager failed: {e_manager}. Trying default ChromeDriver path.")
+            driver = webdriver.Chrome(options=chrome_options)
+            print("[scraper_selenium] ChromeDriver started using default system PATH.")
+
+        print(f"[scraper_selenium] Navigating to URL: {url}")
+        driver.get(url)
+        print(f"[scraper_selenium] Navigated to URL. Waiting for {wait_time} seconds for dynamic content...")
+        time.sleep(wait_time)
+        
+        page_source = driver.page_source
+        if page_source and len(page_source) > 100:
+            print(f"[scraper_selenium] Successfully fetched page source. Length: {len(page_source)}")
+        else:
+            print(f"[scraper_selenium] Page source is empty or very short. Length: {len(page_source) if page_source else 0}")
+            return None
+        return page_source
+    except Exception as e:
+        print(f"[scraper_selenium] An error occurred during Selenium HTML fetching for {url}: {e}")
+        import traceback
+        print(f"[scraper_selenium] Traceback: {traceback.format_exc()}")
+        return None
+    finally:
+        if driver:
+            driver.quit()
+            print("[scraper_selenium] ChromeDriver quit.")
+
+def fetch_html_content(url: str, use_selenium_if_prv: bool = True) -> str | None:
+    print(f"[scraper_fetch] Received URL: {url}")
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query, keep_blank_values=True)
+    print(f"[scraper_fetch] Parsed query_params: {query_params}")
+
+    should_use_selenium = False
+    if use_selenium_if_prv:
+        prv_values = query_params.get('prv')
+        if prv_values:
+            print(f"[scraper_fetch] 'prv' parameter values found: {prv_values}")
+            if any(val.lower() == 'on' for val in prv_values):
+                should_use_selenium = True
+                print(f"[scraper_fetch] 'prv=ON' (case-insensitive) condition met.")
+            else:
+                print(f"[scraper_fetch] 'prv' parameter found, but value is not 'ON' (case-insensitive). Values: {prv_values}")
+        else:
+            print(f"[scraper_fetch] 'prv' parameter not found in query string.")
+    else:
+        print(f"[scraper_fetch] use_selenium_if_prv is False.")
+            
+    if should_use_selenium:
+        print(f"[scraper_fetch] Attempting Selenium fetch for: {url}")
+        return get_dynamic_html_with_selenium(url)
+    else:
+        print(f"[scraper_fetch] Conditions for Selenium not met or not forced. Attempting static fetch for: {url}")
+        return get_static_html_with_requests(url)
 
 def extract_image_urls(html_content: str, base_url: str) -> list[str]:
     soup = BeautifulSoup(html_content, "html.parser")
@@ -85,15 +163,13 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         print(f"[scraper_debug] WARNING: No specific selectors found for domain '{site_domain}'. Falling back to generic full_text.")
         data['full_text'] = soup.get_text(separator='\n', strip=True)
     else:
-        # --- Job Title Extraction ---
         job_title_extracted_specifically = False
+        
         if site_domain == "gakujo.ne.jp":
             print(f"[scraper_debug] Applying specific gakujo.ne.jp job_title logic for URL: {base_url}")
-            
             titles_from_pattern1 = []
             titles_from_pattern2 = []
 
-            # Pattern 1: "募集概要" header followed by "XX卒新卒（職種リスト）" or similar
             overview_header = soup.find(['h2', 'h3', 'h4'], string=lambda s: isinstance(s, str) and '募集概要' in s.strip())
             if overview_header:
                 print(f"[scraper_debug] Found '募集概要' header: <{overview_header.name}> '{overview_header.get_text(strip=True)}'")
@@ -106,22 +182,15 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
                     if text_from_elem: collected_texts_after_overview.append(text_from_elem)
                     current_element = current_element.find_next_sibling()
                     elements_to_check -= 1
-                
                 if collected_texts_after_overview:
                     full_text_after_overview = " ".join(collected_texts_after_overview)
                     print(f"[scraper_debug] Text after '募集概要' for Pattern 1: '{full_text_after_overview[:250]}'")
-                    # Regex for "XX卒新卒（...）", "XX職種（...）", or "（...職）"
                     matches = re.finditer(r"(\d+卒新卒\s*（[^）]+）|\w+職種\s*（[^）]+）|（[^）]+職）)", full_text_after_overview)
-                    for match in matches:
-                        titles_from_pattern1.append(match.group(1))
-                    if titles_from_pattern1:
-                        print(f"[scraper_debug] Job titles from Pattern 1: {titles_from_pattern1}")
-                    else:
-                        print(f"[scraper_debug] No job title patterns found in text after '募集概要'.")
-            else:
-                print(f"[scraper_debug] '募集概要' header not found (Pattern 1).")
+                    for match in matches: titles_from_pattern1.append(match.group(1))
+                    if titles_from_pattern1: print(f"[scraper_debug] Job titles from Pattern 1: {titles_from_pattern1}")
+                    else: print(f"[scraper_debug] No job title patterns found in text after '募集概要'.")
+            else: print(f"[scraper_debug] '募集概要' header not found (Pattern 1).")
 
-            # Pattern 2: "採用職種" dt/dd logic
             print(f"[scraper_debug] Trying dt/dd logic for gakujo (Pattern 2).")
             dt_saiyo_shokushu_list = soup.find_all('dt', string=lambda s: isinstance(s, str) and '採用職種' in s.strip())
             print(f"[scraper_debug] Found {len(dt_saiyo_shokushu_list)} <dt> tags containing '採用職種' for Pattern 2.")
@@ -131,12 +200,9 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
                     dd_text_strip = dd_tag.get_text(strip=True)
                     dd_full_text = dd_tag.get_text(separator='\n', strip=True)
                     print(f"[scraper_debug] Pattern 2: Found <dd> for <dt>. DD content: '{dd_text_strip[:100]}'")
-                    
-                    # Heuristic for /61510/ like pages or general lists
                     if "／" in dd_text_strip and not "■" in dd_text_strip and len(dd_text_strip) > 3:
                         titles_from_pattern2.append(dd_full_text.strip())
                         print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, simpler heuristic): '{dd_full_text.strip()}'")
-                    # Original heuristic for /12138/ like pages
                     elif "■総合職" in dd_text_strip or "■一般職" in dd_text_strip:
                         lines = [line.strip() for line in dd_full_text.split('\n') if line.strip()]
                         job_titles_collected_for_dd = []
@@ -151,12 +217,9 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
                         if job_titles_collected_for_dd:
                             titles_from_pattern2.append("\n".join(job_titles_collected_for_dd))
                             print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, original heuristic): {' '.join(job_titles_collected_for_dd)}'")
-            if not titles_from_pattern2 and dt_saiyo_shokushu_list:
-                print(f"[scraper_debug] Pattern 2 (dt/dd logic) did not yield results matching heuristics.")
-            elif not dt_saiyo_shokushu_list:
-                 print(f"[scraper_debug] No '採用職種' <dt> tags found for Pattern 2.")
+            if not titles_from_pattern2 and dt_saiyo_shokushu_list: print(f"[scraper_debug] Pattern 2 (dt/dd logic) did not yield results matching heuristics.")
+            elif not dt_saiyo_shokushu_list: print(f"[scraper_debug] No '採用職種' <dt> tags found for Pattern 2.")
 
-            # Combine titles from both patterns, ensuring no duplicates if they happen to be identical strings
             combined_titles = []
             seen_titles = set()
             for title_list in [titles_from_pattern1, titles_from_pattern2]:
@@ -164,49 +227,84 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
                     if title_text not in seen_titles:
                         combined_titles.append(title_text)
                         seen_titles.add(title_text)
-            
             if combined_titles:
-                data['job_title'] = "\n---\n".join(combined_titles) # Join with a clear separator
+                data['job_title'] = "\n---\n".join(combined_titles)
                 job_title_extracted_specifically = True
                 print(f"[scraper_debug] Combined job titles for gakujo.ne.jp: '{data['job_title']}'")
-            else:
-                 print(f"[scraper_debug] All specific gakujo.ne.jp job title logics failed.")
+            else: print(f"[scraper_debug] All specific gakujo.ne.jp job title logics failed for this URL.")
         
-        # If specific logic didn't find it, or for other sites, try primary selector from SITE_SELECTORS
-        # (This part remains the same as your current working version)
-        if not job_title_extracted_specifically:
-            # ... (existing code for job_title_selector, H1 fallback etc.)
-            job_title_selector = selectors_for_site.get("job_title")
-            print(f"[scraper_debug] Attempting job_title with SITE_SELECTORS primary selector: '{job_title_selector}'")
-            if job_title_selector:
-                job_title_tag = soup.select_one(job_title_selector)
-                if job_title_tag:
-                    data['job_title'] = job_title_tag.get_text(separator='\n', strip=True)
-                    print(f"[scraper_debug] Job title found with SITE_SELECTORS primary selector: '{data['job_title']}'")
-                else:
-                    print(f"[scraper_debug] Job title NOT found with SITE_SELECTORS primary selector: '{job_title_selector}'")
-            else:
-                print(f"[scraper_debug] No primary job_title_selector in SITE_SELECTORS for {site_domain}.")
+        elif site_domain == "re-katsu.jp":
+            print(f"[scraper_debug] Applying specific re-katsu.jp job_title logic.")
+            titles_to_combine = [] 
+            seen_titles_for_combine = set()
 
-        # Fallback to generic H1 (less reliable)
+            # Pattern A: Existing selector (SITE_SELECTORS["re-katsu.jp"]["job_title"])
+            selector_pattern_a = selectors_for_site.get("job_title") 
+            if selector_pattern_a:
+                tag_a = soup.select_one(selector_pattern_a)
+                if tag_a:
+                    title_a = tag_a.get_text(separator='\n', strip=True)
+                    if title_a and title_a not in seen_titles_for_combine:
+                        titles_to_combine.append(title_a)
+                        seen_titles_for_combine.add(title_a)
+                        print(f"[scraper_debug] Re-katsu: Job title from Pattern A ('{selector_pattern_a}'): '{title_a}'")
+                else:
+                    print(f"[scraper_debug] Re-katsu: Job title NOT found with Pattern A selector: '{selector_pattern_a}'")
+            else:
+                print(f"[scraper_debug] Re-katsu: No Pattern A selector defined in SITE_SELECTORS.")
+
+            # Pattern B: New selector for upper page job title (based on user provided id)
+            selector_pattern_b = "span#lblServIcon" 
+            
+            print(f"[scraper_debug] Re-katsu: Attempting job_title with Pattern B selector: '{selector_pattern_b}'")
+            tag_b = soup.select_one(selector_pattern_b)
+            if tag_b:
+                title_b = tag_b.get_text(separator='\n', strip=True)
+                if title_b and title_b not in seen_titles_for_combine:
+                    titles_to_combine.append(title_b)
+                    seen_titles_for_combine.add(title_b)
+                    print(f"[scraper_debug] Re-katsu: Job title from Pattern B ('{selector_pattern_b}'): '{title_b}'")
+            else:
+                print(f"[scraper_debug] Re-katsu: Job title NOT found with Pattern B selector: '{selector_pattern_b}'")
+
+            if titles_to_combine:
+                data['job_title'] = "\n---\n".join(titles_to_combine) 
+                job_title_extracted_specifically = True
+                print(f"[scraper_debug] Combined job titles for re-katsu.jp: '{data['job_title']}'")
+            else:
+                print(f"[scraper_debug] No job titles found from any specific pattern for re-katsu.jp.")
+        
+        # If specific logic for a site didn't set job_title, or for other unhandled sites, try primary selector
+        if not job_title_extracted_specifically:
+            if site_domain not in ["gakujo.ne.jp", "re-katsu.jp"]: 
+                job_title_selector = selectors_for_site.get("job_title")
+                print(f"[scraper_debug] Attempting job_title for '{site_domain}' with SITE_SELECTORS primary selector: '{job_title_selector}'")
+                if job_title_selector:
+                    job_title_tag = soup.select_one(job_title_selector)
+                    if job_title_tag:
+                        data['job_title'] = job_title_tag.get_text(separator='\n', strip=True)
+                        print(f"[scraper_debug] Job title found with SITE_SELECTORS primary selector for '{site_domain}': '{data['job_title']}'")
+                    else:
+                        print(f"[scraper_debug] Job title NOT found with SITE_SELECTORS primary selector for '{site_domain}': '{job_title_selector}'")
+                else:
+                    print(f"[scraper_debug] No primary job_title_selector in SITE_SELECTORS for {site_domain}.")
+
+        # Fallback to generic H1 (less reliable) only if still no job title
         if not data['job_title']:
-            print(f"[scraper_debug] No job title yet. Trying H1 fallback for {site_domain}.")
+            print(f"[scraper_debug] No job title from specific or primary selectors. Trying H1 fallback for {site_domain}.")
             generic_h1 = soup.find('h1')
             if generic_h1:
                 if site_domain == "gakujo.ne.jp" and 'h1-company-name_inner' in generic_h1.get('class', []):
                      print(f"[scraper_debug] Found H1 for gakujo (company name): '{generic_h1.get_text(strip=True)}'. Not using for job_title.")
                 elif site_domain == "re-katsu.jp" and generic_h1.find("span", class_="head-catchcopy"):
-                    data['job_title'] = generic_h1.find("span", class_="head-catchcopy").get_text(separator='\n', strip=True)
-                    print(f"[scraper_debug] Job title from re-katsu.jp H1 span: '{data['job_title']}'")
-                # else: # Avoid assigning generic H1 to job_title unless very sure
-                #     print(f"[scraper_debug] Generic H1 text: '{generic_h1.get_text(strip=True)}'. Not assigning to job_title by default.")
+                     print(f"[scraper_debug] Re-katsu H1 with head-catchcopy found: '{generic_h1.find('span', class_='head-catchcopy').get_text(strip=True)}'. Not assigning if specific logic ran.")
             else:
                 print(f"[scraper_debug] Generic H1 not found.")
         
         if not data['job_title']:
             print(f"[scraper_debug] All job title extraction attempts for {site_domain} ultimately failed. Job title remains None.")
 
-        # --- Salary, Location, Qualifications --- (using existing selectors from SITE_SELECTORS)
+        # --- Salary, Location, Qualifications ---
         for field_key in ["salary", "location", "qualifications"]:
             selector = selectors_for_site.get(field_key)
             print(f"[scraper_debug] Attempting {field_key} with selector: '{selector}'")
@@ -239,51 +337,43 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
             data['full_text'] = soup.get_text(separator='\n', strip=True)
             print(f"[scraper_debug] Full text (fallback) length: {len(data['full_text'])}")
 
-    # Image OCR (mocked)
-    # image_urls = extract_image_urls(html_content, base_url)
-    # for img_url in image_urls:
-    #     data['image_ocr_texts'].append(perform_ocr_on_image(img_url))
     print(f"[scraper_debug] Final extracted job_title: '{data['job_title']}'")
     return data
 
 def integrate_all_text(extracted_data: dict) -> str:
-    """Combines full_text and OCR image texts for the review phase."""
     text_parts = []
     full_text = extracted_data.get('full_text')
     if full_text: text_parts.append(full_text)
-    
     image_ocr_texts = extracted_data.get('image_ocr_texts')
     if image_ocr_texts:
         for ocr_text in image_ocr_texts:
             if ocr_text: text_parts.append(ocr_text)
-            
     return "\n\n".join(text_parts)
 
 if __name__ == "__main__":
-    print("\n--- Testing Scraper with Multi-Site Selector Logic (using Requests) ---")
-    test_url = "https://www.gakujo.ne.jp/campus/company/employ/61510/" # Target URL for testing
+    print("\n--- Testing Scraper with Multi-Site Selector Logic ---")
+    
+    test_urls = [
+        "https://www.gakujo.ne.jp/campus/company/employ/83134?prv=ON", 
+        "https://www.gakujo.ne.jp/campus/company/employ/12138/",      
+        "https://re-katsu.jp/career/company/recruit/57536/?prv=ON", 
+        # "https://re-katsu.jp/career/company/recruit/57021/"       # Example normal re-katsu URL
+    ]
 
-    print(f"Fetching static HTML from: {test_url}")
-    static_html = get_static_html_with_requests(test_url)
+    for test_url in test_urls:
+        print(f"\n--- Testing URL: {test_url} ---")
+        html_content = fetch_html_content(test_url, use_selenium_if_prv=True)
+        
+        if html_content:
+            domain = get_site_domain(test_url)
+            print(f"Detected site domain: {domain}")
+            extracted_info = extract_text_from_html(html_content, test_url, domain)
+            print("\n--- Extracted Fields ---")
+            for key, value in extracted_info.items():
+                if key == "full_text": print(f"  {key}: {str(value)[:200]}...")
+                elif key == "image_ocr_texts": print(f"  {key} (count): {len(value)}")
+                else: print(f"  {key}: {value}")
+        else:
+            print(f"Failed to fetch HTML for {test_url}")
 
-    if static_html:
-        print(f"Successfully fetched static HTML.")
-        site_domain_to_test = get_site_domain(test_url)
-        print(f"Detected site domain: {site_domain_to_test}")
-
-        print("\nExtracting text using extract_text_from_html with domain-specific selectors...")
-        extracted_info = extract_text_from_html(static_html, test_url, site_domain_to_test)
-
-        print("\n--- Extracted Fields ---")
-        print(f"  Job Title: {extracted_info.get('job_title')}")
-        print(f"  Salary: {extracted_info.get('salary')}")
-        print(f"  Location: {extracted_info.get('location')}")
-        print(f"  Qualifications: {extracted_info.get('qualifications')}")
-        print(f"  Full Text (first 200 chars): {extracted_info.get('full_text', '')[:200]}...")
-        # print(f"  Image OCR Texts (count): {len(extracted_info.get('image_ocr_texts'))}")
-        # if extracted_info.get('image_ocr_texts'):
-        #      print(f"  First OCR Text: {extracted_info.get('image_ocr_texts')[0]}")
-    else:
-        print(f"Failed to fetch static HTML using Requests from {test_url}.")
-
-print("\n--- End of scraper.py test ---")
+    print("\n--- End of scraper.py test ---")

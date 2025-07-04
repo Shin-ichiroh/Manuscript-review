@@ -2,7 +2,7 @@ import os
 import re # For formatting review output
 
 # Use relative imports for modules within the same package (src)
-from .scraper import get_static_html_with_requests, extract_text_from_html, get_site_domain
+from .scraper import fetch_html_content, extract_text_from_html, get_site_domain
 from .rule_processor import load_rulebook, parse_rulebook_to_chunks, add_mock_vectors_to_chunks
 from .reviewer import perform_review
 
@@ -61,19 +61,22 @@ def process_job_posting_url(job_post_url: str) -> dict:
     results["debug_messages"].append(f"--- Starting processing for URL: {job_post_url} ---")
 
     # --- Phase 1: Data Acquisition ---
-    results["debug_messages"].append("--- Phase 1: Data Acquisition (using Requests) ---")
+    # results["debug_messages"].append("--- Phase 1: Data Acquisition (using Requests) ---") # Old message
+    results["debug_messages"].append("--- Phase 1: Data Acquisition ---") # Generic message
     site_domain = get_site_domain(job_post_url)
     results["site_domain"] = site_domain
     results["debug_messages"].append(f"Detected site domain: {site_domain}")
 
-    html_content = get_static_html_with_requests(job_post_url)
+    # Fetch HTML content using the new dispatch function
+    html_content = fetch_html_content(job_post_url) # ★★★ ここを変更 ★★★
 
     if not html_content:
-        results["error_message"] = "Failed to fetch HTML content using Requests."
+        results["error_message"] = "Failed to fetch HTML content." # Generic message
         results["debug_messages"].append(results["error_message"])
         return results
 
-    results["debug_messages"].append("Static HTML content fetched successfully using Requests.")
+    # results["debug_messages"].append("Static HTML content fetched successfully using Requests.") # Old message
+    results["debug_messages"].append("HTML content fetched successfully.") # Generic message
 
     extracted_info = extract_text_from_html(html_content, job_post_url, site_domain)
 

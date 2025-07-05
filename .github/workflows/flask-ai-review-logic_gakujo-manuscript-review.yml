@@ -10,8 +10,7 @@ jobs:
   build-and-push-to-acr:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Required for actions/checkout
-      # id-token: write # Not needed if using ACR admin credentials
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -26,40 +25,35 @@ jobs:
 
       - name: Build and push Docker image to ACR
         run: |
-          docker build . -t ${{ secrets.ACR_LOGIN_SERVER }}/manuscript-review:${{ github.sha }}
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/manuscript-review:${{ github.sha }}
-        # image name is <acr-login-server>/<image-name>:<tag>
-        # Using github.sha for a unique tag for each commit
+          IMAGE_NAME="manuscript-review" # Or your preferred image name in ACR
+          ACR_REPO="${{ secrets.ACR_LOGIN_SERVER }}/${IMAGE_NAME}"
+          
+          docker build . -t ${ACR_REPO}:${{ github.sha }} -t ${ACR_REPO}:latest
+          docker push ${ACR_REPO}:${{ github.sha }}
+          docker push ${ACR_REPO}:latest
 
   deploy-to-app-service:
     runs-on: ubuntu-latest
     needs: build-and-push-to-acr
     environment:
-      name: 'Production' # Optional: define an environment in GitHub settings
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write # Required for azure/login@v2 if using OIDC
+      id-token: write 
       contents: read
 
     steps:
       - name: Login to Azure (for App Service deployment)
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D52F3D41008C4A9495A9BF5175C1BC8C }} # Keep existing App Service principal if it has rights to configure Web App
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A44DE92AA2144498AE6E71391542E5FE }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_30C32D28FBC14035A8FFED30DCECD3BA }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}       # Using generic secret name
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}       # Using generic secret name
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} # Using generic secret name
 
       - name: Deploy to Azure Web App using Container image
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'Gakujo-manuscript-review' # Your App Service name
-          slot-name: 'Production' # Your deployment slot name
-          images: '${{ secrets.ACR_LOGIN_SERVER }}/manuscript-review:${{ github.sha }}' # Image to deploy
-
-      # Optional: Azure logout step
-      # - name: Logout from Azure
-      #   run: |
-      #     az logout
-      #     az cache purge
-      #     az account clear
+          app-name: 'Gakujo-manuscript-review' 
+          images: '${{ secrets.ACR_LOGIN_SERVER }}/manuscript-review:latest' # Referencing the 'latest' tag
+          # slot-name: 'Production' # Uncomment if using deployment slots

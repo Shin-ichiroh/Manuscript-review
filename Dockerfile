@@ -69,4 +69,4 @@ EXPOSE 8000
 # Define the command to run the application using Gunicorn
 # Using a shell form to allow environment variable expansion if needed later
 # Log to stdout/stderr for App Service to pick up
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "--timeout", "120", "app:app"]

@@ -108,32 +108,51 @@ def get_dynamic_html_with_selenium(url: str, wait_time: int = 10) -> str | None:
             print("[scraper_selenium] ChromeDriver quit.")
 
 def fetch_html_content(url: str, use_selenium_if_prv: bool = True) -> str | None:
-    print(f"[scraper_fetch] Received URL: {url}")
-    parsed_url = urlparse(url)
-    query_params = parse_qs(parsed_url.query, keep_blank_values=True)
-    print(f"[scraper_fetch] Parsed query_params: {query_params}")
+    print(f"[scraper_fetch] Received URL for processing: {url}")
+    try:
+        parsed_url = urlparse(url)
+        # クエリパラメータをデコードせずに生の文字列として取得してみる
+        raw_query_string = parsed_url.query
+        print(f"[scraper_fetch] Raw query string: {raw_query_string}")
 
-    should_use_selenium = False
-    if use_selenium_if_prv:
-        prv_values = query_params.get('prv')
-        if prv_values:
-            print(f"[scraper_fetch] 'prv' parameter values found: {prv_values}")
-            if any(val.lower() == 'on' for val in prv_values):
-                should_use_selenium = True
-                print(f"[scraper_fetch] 'prv=ON' (case-insensitive) condition met.")
+        query_params = parse_qs(raw_query_string, keep_blank_values=True)
+        print(f"[scraper_fetch] Parsed query_params: {query_params}")
+
+        should_use_selenium = False
+        if use_selenium_if_prv:
+            # prvパラメータの存在と値をより頑健にチェック
+            if 'prv' in raw_query_string.lower(): # 生のクエリ文字列で 'prv' をチェック
+                prv_values = query_params.get('prv')
+                if prv_values:
+                    print(f"[scraper_fetch] 'prv' parameter values found: {prv_values}")
+                    if any(val.lower() == 'on' for val in prv_values):
+                        should_use_selenium = True
+                        print(f"[scraper_fetch] 'prv=ON' (case-insensitive) condition met based on parsed values.")
+                    else:
+                        print(f"[scraper_fetch] 'prv' parsed but value not 'ON'. Values: {prv_values}")
+                # もしparse_qsでうまく取れない場合も考慮し、生の文字列でもチェック
+                elif 'prv=on' in raw_query_string.lower(): # Check in raw query string as a fallback
+                    should_use_selenium = True
+                    print(f"[scraper_fetch] 'prv=on' (case-insensitive) found in raw query string. Forcing Selenium.")
+                else:
+                    print(f"[scraper_fetch] 'prv' key found in raw query but value not 'on'.")
             else:
-                print(f"[scraper_fetch] 'prv' parameter found, but value is not 'ON' (case-insensitive). Values: {prv_values}")
+                print(f"[scraper_fetch] 'prv' key not found in raw query string.")
         else:
-            print(f"[scraper_fetch] 'prv' parameter not found in query string.")
-    else:
-        print(f"[scraper_fetch] use_selenium_if_prv is False.")
+            print(f"[scraper_fetch] use_selenium_if_prv is False.")
             
-    if should_use_selenium:
-        print(f"[scraper_fetch] Attempting Selenium fetch for: {url}")
-        return get_dynamic_html_with_selenium(url)
-    else:
-        print(f"[scraper_fetch] Conditions for Selenium not met or not forced. Attempting static fetch for: {url}")
-        return get_static_html_with_requests(url)
+        if should_use_selenium:
+            print(f"[scraper_fetch] Decision: Use Selenium for URL: {url}")
+            return get_dynamic_html_with_selenium(url)
+        else:
+            print(f"[scraper_fetch] Decision: Use Requests for URL: {url}")
+            return get_static_html_with_requests(url)
+            
+    except Exception as e_fetch:
+        print(f"[scraper_fetch] CRITICAL ERROR in fetch_html_content for URL {url}: {e_fetch}")
+        import traceback
+        print(f"[scraper_fetch] Traceback: {traceback.format_exc()}")
+        return None
 
 def extract_image_urls(html_content: str, base_url: str) -> list[str]:
     soup = BeautifulSoup(html_content, "html.parser")

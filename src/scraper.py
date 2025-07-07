@@ -186,71 +186,73 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         
         if site_domain == "gakujo.ne.jp":
             print(f"[scraper_debug] Applying specific gakujo.ne.jp job_title logic for URL: {base_url}")
-            titles_from_pattern1 = []
-            titles_from_pattern2 = []
+            titles_collected = [] # 取得した職種候補をここに集める
+            seen_titles_for_combine = set()
 
+            # --- メインの抽出ロジック: <dt>採用職種</dt> or <dt>職種</dt> ---
+            # "採用職種" または "職種" というテキストを持つdtタグを探す
+            dt_job_labels = soup.find_all('dt', string=lambda s: isinstance(s, str) and ('採用職種' in s.strip() or s.strip() == '職種'))
+            print(f"[scraper_debug] Found {len(dt_job_labels)} <dt> tags with '採用職種' or '職種'.")
+            for dt_tag in dt_job_labels:
+                dd_tag = dt_tag.find_next_sibling('dd')
+                if dd_tag:
+                    # ddタグ直下のspanタグの内容を取得しようと試みる
+                    span_tag = dd_tag.find('span') # ddの最初の子孫spanを想定
+                    job_text_candidate = ""
+                    if span_tag:
+                        job_text_candidate = span_tag.get_text(separator='\n', strip=True)
+                        print(f"[scraper_debug] Found <dd><span> for <dt> '{dt_tag.get_text(strip=True)}'. Span content: '{job_text_candidate[:100]}'")
+                    else: # spanがない場合はdd全体のテキストを試す
+                        job_text_candidate = dd_tag.get_text(separator='\n', strip=True)
+                        print(f"[scraper_debug] Found <dd> for <dt> '{dt_tag.get_text(strip=True)}', no span inside. DD content: '{job_text_candidate[:100]}'")
+
+                    if job_text_candidate and job_text_candidate not in seen_titles_for_combine:
+                        # 簡単なヒューリスティック: あまりにも長すぎるものは除外 (例: 300文字以上)
+                        # また、明らかに職種ではないキーワードを含むものも除外検討 (例: "仕事内容"がddに入ってしまっている場合など)
+                        if len(job_text_candidate) < 300 and not any(kw in job_text_candidate for kw in ["仕事内容詳細", "勤務地詳細"]):
+                            titles_collected.append(job_text_candidate)
+                            seen_titles_for_combine.add(job_text_candidate)
+                            print(f"[scraper_debug] Added to job titles from dt/dd: '{job_text_candidate}'")
+                        else:
+                            print(f"[scraper_debug] Candidate from dt/dd rejected (too long or keyword conflict): '{job_text_candidate[:50]}...'" )
+            
+            # --- 補助的な抽出ロジック: 「募集概要」直後のテキスト ---
+            # (これは、上記dt/ddで見つからない場合の補完、または追加情報として)
             overview_header = soup.find(['h2', 'h3', 'h4'], string=lambda s: isinstance(s, str) and '募集概要' in s.strip())
             if overview_header:
-                print(f"[scraper_debug] Found '募集概要' header: <{overview_header.name}> '{overview_header.get_text(strip=True)}'")
+                print(f"[scraper_debug] Found '募集概要' header for aux check: <{overview_header.name}> '{overview_header.get_text(strip=True)}'")
                 collected_texts_after_overview = []
                 current_element = overview_header.find_next_sibling()
-                elements_to_check = 3 
+                elements_to_check = 2 # 直後の2要素程度をチェック
                 while current_element and elements_to_check > 0:
-                    if current_element.name in ['h2', 'h3', 'h4', 'dt']: break
+                    if current_element.name in ['h2', 'h3', 'h4', 'dt', 'dl']: break # 新しいセクションやリストが始まったら止める
                     text_from_elem = current_element.get_text(separator=' ', strip=True)
                     if text_from_elem: collected_texts_after_overview.append(text_from_elem)
                     current_element = current_element.find_next_sibling()
                     elements_to_check -= 1
+                
                 if collected_texts_after_overview:
                     full_text_after_overview = " ".join(collected_texts_after_overview)
-                    print(f"[scraper_debug] Text after '募集概要' for Pattern 1: '{full_text_after_overview[:250]}'")
-                    matches = re.finditer(r"(\d+卒新卒\s*（[^）]+）|\w+職種\s*（[^）]+）|（[^）]+職）)", full_text_after_overview)
-                    for match in matches: titles_from_pattern1.append(match.group(1))
-                    if titles_from_pattern1: print(f"[scraper_debug] Job titles from Pattern 1: {titles_from_pattern1}")
-                    else: print(f"[scraper_debug] No job title patterns found in text after '募集概要'.")
-            else: print(f"[scraper_debug] '募集概要' header not found (Pattern 1).")
+                    print(f"[scraper_debug] Text after '募集概要' for aux check: '{full_text_after_overview[:200]}'")
+                    # ここでは特定のパターンにマッチするものを探す (例: "XX卒新卒（...）" や "（...職）")
+                    # または、単純にこのテキストブロックが職種情報らしいか判定する
+                    # 今回は、もしこのテキストが短く（例: 100文字以内）、かつdt/ddで見つかったものと異なる場合に採用を検討
+                    if len(full_text_after_overview) > 3 and len(full_text_after_overview) < 150:
+                        if full_text_after_overview not in seen_titles_for_combine:
+                            # これが本当に職種かは慎重に判断。今回は例として追加。
+                            # titles_collected.append(full_text_after_overview)
+                            # seen_titles_for_combine.add(full_text_after_overview)
+                            print(f"[scraper_debug] Aux check: Text after '募集概要' considered as potential job title: '{full_text_after_overview}' (Not adding by default, needs review)")
+            else:
+                print(f"[scraper_debug] '募集概要' header not found for aux check.")
 
-            print(f"[scraper_debug] Trying dt/dd logic for gakujo (Pattern 2).")
-            dt_saiyo_shokushu_list = soup.find_all('dt', string=lambda s: isinstance(s, str) and '採用職種' in s.strip())
-            print(f"[scraper_debug] Found {len(dt_saiyo_shokushu_list)} <dt> tags containing '採用職種' for Pattern 2.")
-            for dt_tag in dt_saiyo_shokushu_list:
-                dd_tag = dt_tag.find_next_sibling('dd')
-                if dd_tag:
-                    dd_text_strip = dd_tag.get_text(strip=True)
-                    dd_full_text = dd_tag.get_text(separator='\n', strip=True)
-                    print(f"[scraper_debug] Pattern 2: Found <dd> for <dt>. DD content: '{dd_text_strip[:100]}'")
-                    if "／" in dd_text_strip and not "■" in dd_text_strip and len(dd_text_strip) > 3:
-                        titles_from_pattern2.append(dd_full_text.strip())
-                        print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, simpler heuristic): '{dd_full_text.strip()}'")
-                    elif "■総合職" in dd_text_strip or "■一般職" in dd_text_strip:
-                        lines = [line.strip() for line in dd_full_text.split('\n') if line.strip()]
-                        job_titles_collected_for_dd = []
-                        collecting = False
-                        for line in lines:
-                            if line.startswith("■"): collecting = True
-                            if collecting:
-                                if not any(kw in line for kw in ["仕事内容", "勤務地", "給与", "応募資格", "休日休暇"]) or line.startswith("■"):
-                                    job_titles_collected_for_dd.append(line)
-                                    if len(job_titles_collected_for_dd) >= 7: break
-                                elif job_titles_collected_for_dd: break
-                        if job_titles_collected_for_dd:
-                            titles_from_pattern2.append("\n".join(job_titles_collected_for_dd))
-                            print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, original heuristic): {' '.join(job_titles_collected_for_dd)}'")
-            if not titles_from_pattern2 and dt_saiyo_shokushu_list: print(f"[scraper_debug] Pattern 2 (dt/dd logic) did not yield results matching heuristics.")
-            elif not dt_saiyo_shokushu_list: print(f"[scraper_debug] No '採用職種' <dt> tags found for Pattern 2.")
 
-            combined_titles = []
-            seen_titles = set()
-            for title_list in [titles_from_pattern1, titles_from_pattern2]:
-                for title_text in title_list:
-                    if title_text not in seen_titles:
-                        combined_titles.append(title_text)
-                        seen_titles.add(title_text)
-            if combined_titles:
-                data['job_title'] = "\n---\n".join(combined_titles)
+            if titles_collected:
+                data['job_title'] = "\n---\n".join(titles_collected) # Join with a clear separator
                 job_title_extracted_specifically = True
                 print(f"[scraper_debug] Combined job titles for gakujo.ne.jp: '{data['job_title']}'")
-            else: print(f"[scraper_debug] All specific gakujo.ne.jp job title logics failed for this URL.")
+            else: 
+                print(f"[scraper_debug] No job titles extracted from specific gakujo.ne.jp logic.")
         
         elif site_domain == "re-katsu.jp":
             print(f"[scraper_debug] Applying specific re-katsu.jp job_title logic.")

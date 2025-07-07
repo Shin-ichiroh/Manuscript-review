@@ -190,25 +190,33 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
             seen_titles_for_combine = set()
 
             # --- メインの抽出ロジック: <dt>採用職種</dt> or <dt>職種</dt> ---
-            # "採用職種" または "職種" というテキストを持つdtタグを探す
             dt_job_labels = soup.find_all('dt', string=lambda s: isinstance(s, str) and ('採用職種' in s.strip() or s.strip() == '職種'))
             print(f"[scraper_debug] Found {len(dt_job_labels)} <dt> tags with '採用職種' or '職種'.")
             for dt_tag in dt_job_labels:
                 dd_tag = dt_tag.find_next_sibling('dd')
                 if dd_tag:
-                    # ddタグ直下のspanタグの内容を取得しようと試みる
-                    span_tag = dd_tag.find('span') # ddの最初の子孫spanを想定
                     job_text_candidate = ""
-                    if span_tag:
-                        job_text_candidate = span_tag.get_text(separator='\n', strip=True)
-                        print(f"[scraper_debug] Found <dd><span> for <dt> '{dt_tag.get_text(strip=True)}'. Span content: '{job_text_candidate[:100]}'")
-                    else: # spanがない場合はdd全体のテキストを試す
+                    # まず dd > div > span の構造を探す (ご提示のHTML断片に合致)
+                    div_in_dd = dd_tag.find('div')
+                    if div_in_dd:
+                        span_in_div = div_in_dd.find('span')
+                        if span_in_div:
+                            job_text_candidate = span_in_div.get_text(separator='\n', strip=True)
+                            print(f"[scraper_debug] Found <dd><div><span> for <dt> '{dt_tag.get_text(strip=True)}'. Span content: '{job_text_candidate[:100]}'")
+                    
+                    # もし上記で見つからなければ、dd 直下の最初の span を試す
+                    if not job_text_candidate:
+                        span_tag = dd_tag.find('span') 
+                        if span_tag:
+                            job_text_candidate = span_tag.get_text(separator='\n', strip=True)
+                            print(f"[scraper_debug] Found <dd><span> for <dt> '{dt_tag.get_text(strip=True)}'. Span content: '{job_text_candidate[:100]}'")
+                    
+                    # それでも見つからなければ、dd全体のテキストを試す
+                    if not job_text_candidate:
                         job_text_candidate = dd_tag.get_text(separator='\n', strip=True)
-                        print(f"[scraper_debug] Found <dd> for <dt> '{dt_tag.get_text(strip=True)}', no span inside. DD content: '{job_text_candidate[:100]}'")
+                        print(f"[scraper_debug] Found <dd> for <dt> '{dt_tag.get_text(strip=True)}', no specific span. DD content: '{job_text_candidate[:100]}'")
 
                     if job_text_candidate and job_text_candidate not in seen_titles_for_combine:
-                        # 簡単なヒューリスティック: あまりにも長すぎるものは除外 (例: 300文字以上)
-                        # また、明らかに職種ではないキーワードを含むものも除外検討 (例: "仕事内容"がddに入ってしまっている場合など)
                         if len(job_text_candidate) < 300 and not any(kw in job_text_candidate for kw in ["仕事内容詳細", "勤務地詳細"]):
                             titles_collected.append(job_text_candidate)
                             seen_titles_for_combine.add(job_text_candidate)

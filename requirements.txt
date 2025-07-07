@@ -3,3 +3,6 @@ beautifulsoup4
 selenium
 webdriver-manager
 openai~=1.0
+Flask~=3.0
+python-dotenv~=0.21
+gunicorn

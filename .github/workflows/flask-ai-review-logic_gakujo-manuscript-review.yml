@@ -1,0 +1,59 @@
+name: Build and deploy Docker image to Azure Web App - Gakujo-manuscript-review
+
+on:
+  push:
+    branches:
+      - Flask-ai-review-logic
+  workflow_dispatch:
+
+jobs:
+  build-and-push-to-acr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push Docker image to ACR
+        run: |
+          IMAGE_NAME="manuscript-review" # Or your preferred image name in ACR
+          ACR_REPO="${{ secrets.ACR_LOGIN_SERVER }}/${IMAGE_NAME}"
+          
+          docker build . -t ${ACR_REPO}:${{ github.sha }} -t ${ACR_REPO}:latest
+          docker push ${ACR_REPO}:${{ github.sha }}
+          docker push ${ACR_REPO}:latest
+
+  deploy-to-app-service:
+    runs-on: ubuntu-latest
+    needs: build-and-push-to-acr
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      id-token: write 
+      contents: read
+
+    steps:
+      - name: Login to Azure (for App Service deployment)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}       # Using generic secret name
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}       # Using generic secret name
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} # Using generic secret name
+
+      - name: Deploy to Azure Web App using Container image
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'Gakujo-manuscript-review' 
+          images: '${{ secrets.ACR_LOGIN_SERVER }}/manuscript-review:latest' # Referencing the 'latest' tag
+          # slot-name: 'Production' # Uncomment if using deployment slots

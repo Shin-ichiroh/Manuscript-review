@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>求人原稿審査AIエージェント</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>求人原稿審査AIエージェント</h1>
+        <form action="{{ url_for('review') }}" method="post" id="review-form">
+            <label for="url">審査する求人原稿のURL:</label>
+            <input type="url" id="url" name="url" required placeholder="例: https://example.com/job-posting">
+            <br>
+            <button type="submit" id="submit-button">
+                審査開始
+                <span class="loader" id="loader"></span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('review-form').addEventListener('submit', function() {
+            var button = document.getElementById('submit-button');
+            var loader = document.getElementById('loader');
+            
+            button.disabled = true;
+            // To change button text, you might need a specific span for the text node.
+            // For example: button.querySelector('.button-text').textContent = "審査中...";
+            loader.style.display = 'inline-block';
+        });
+    </script>
+</body>
+</html>

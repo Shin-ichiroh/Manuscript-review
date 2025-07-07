@@ -15,11 +15,12 @@ from selenium.webdriver.chrome.options import Options
 # Global dictionary for site-specific selectors
 SITE_SELECTORS = {
     "gakujo.ne.jp": {
-        "job_title": "dl.sep-text dt:-soup-contains('採用職種 ') + dd div span", 
+        "job_title_upper": "div#pnlIcon div.sep__type dt:-soup-contains('採用職種') + dd",
+        "job_title_overview": "div.sep__detail__body__recruit dl.sep-text dt:-soup-contains('採用職種') + dd div span",
         "salary": "dl.sep-text dt:-soup-contains('給与') + dd div span",
         "location": "dl.sep-text dt:-soup-contains('勤務地') + dd div span",
         "qualifications": "dl.sep-text dt:-soup-contains('応募資格') + dd div span",
-        "full_text_area": "div.sep__detail__contents" # ★★★ この行を追加/更新 ★★★
+        "full_text_area": "div.sep__detail__contents" 
     },
     "re-katsu.jp": {
         "job_title": "span#lblWantedJobType", # This is Pattern A for re-katsu
@@ -186,71 +187,45 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         
         if site_domain == "gakujo.ne.jp":
             print(f"[scraper_debug] Applying specific gakujo.ne.jp job_title logic for URL: {base_url}")
-            titles_from_pattern1 = []
-            titles_from_pattern2 = []
-
-            overview_header = soup.find(['h2', 'h3', 'h4'], string=lambda s: isinstance(s, str) and '募集概要' in s.strip())
-            if overview_header:
-                print(f"[scraper_debug] Found '募集概要' header: <{overview_header.name}> '{overview_header.get_text(strip=True)}'")
-                collected_texts_after_overview = []
-                current_element = overview_header.find_next_sibling()
-                elements_to_check = 3 
-                while current_element and elements_to_check > 0:
-                    if current_element.name in ['h2', 'h3', 'h4', 'dt']: break
-                    text_from_elem = current_element.get_text(separator=' ', strip=True)
-                    if text_from_elem: collected_texts_after_overview.append(text_from_elem)
-                    current_element = current_element.find_next_sibling()
-                    elements_to_check -= 1
-                if collected_texts_after_overview:
-                    full_text_after_overview = " ".join(collected_texts_after_overview)
-                    print(f"[scraper_debug] Text after '募集概要' for Pattern 1: '{full_text_after_overview[:250]}'")
-                    matches = re.finditer(r"(\d+卒新卒\s*（[^）]+）|\w+職種\s*（[^）]+）|（[^）]+職）)", full_text_after_overview)
-                    for match in matches: titles_from_pattern1.append(match.group(1))
-                    if titles_from_pattern1: print(f"[scraper_debug] Job titles from Pattern 1: {titles_from_pattern1}")
-                    else: print(f"[scraper_debug] No job title patterns found in text after '募集概要'.")
-            else: print(f"[scraper_debug] '募集概要' header not found (Pattern 1).")
-
-            print(f"[scraper_debug] Trying dt/dd logic for gakujo (Pattern 2).")
-            dt_saiyo_shokushu_list = soup.find_all('dt', string=lambda s: isinstance(s, str) and '採用職種' in s.strip())
-            print(f"[scraper_debug] Found {len(dt_saiyo_shokushu_list)} <dt> tags containing '採用職種' for Pattern 2.")
-            for dt_tag in dt_saiyo_shokushu_list:
-                dd_tag = dt_tag.find_next_sibling('dd')
-                if dd_tag:
-                    dd_text_strip = dd_tag.get_text(strip=True)
-                    dd_full_text = dd_tag.get_text(separator='\n', strip=True)
-                    print(f"[scraper_debug] Pattern 2: Found <dd> for <dt>. DD content: '{dd_text_strip[:100]}'")
-                    if "／" in dd_text_strip and not "■" in dd_text_strip and len(dd_text_strip) > 3:
-                        titles_from_pattern2.append(dd_full_text.strip())
-                        print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, simpler heuristic): '{dd_full_text.strip()}'")
-                    elif "■総合職" in dd_text_strip or "■一般職" in dd_text_strip:
-                        lines = [line.strip() for line in dd_full_text.split('\n') if line.strip()]
-                        job_titles_collected_for_dd = []
-                        collecting = False
-                        for line in lines:
-                            if line.startswith("■"): collecting = True
-                            if collecting:
-                                if not any(kw in line for kw in ["仕事内容", "勤務地", "給与", "応募資格", "休日休暇"]) or line.startswith("■"):
-                                    job_titles_collected_for_dd.append(line)
-                                    if len(job_titles_collected_for_dd) >= 7: break
-                                elif job_titles_collected_for_dd: break
-                        if job_titles_collected_for_dd:
-                            titles_from_pattern2.append("\n".join(job_titles_collected_for_dd))
-                            print(f"[scraper_debug] Job titles added from Pattern 2 (dt/dd, original heuristic): {' '.join(job_titles_collected_for_dd)}'")
-            if not titles_from_pattern2 and dt_saiyo_shokushu_list: print(f"[scraper_debug] Pattern 2 (dt/dd logic) did not yield results matching heuristics.")
-            elif not dt_saiyo_shokushu_list: print(f"[scraper_debug] No '採用職種' <dt> tags found for Pattern 2.")
-
             combined_titles = []
             seen_titles = set()
-            for title_list in [titles_from_pattern1, titles_from_pattern2]:
-                for title_text in title_list:
-                    if title_text not in seen_titles:
-                        combined_titles.append(title_text)
-                        seen_titles.add(title_text)
+
+            # Extract from upper section
+            job_title_upper_selector = selectors_for_site.get("job_title_upper")
+            if job_title_upper_selector:
+                upper_title_tag = soup.select_one(job_title_upper_selector)
+                if upper_title_tag:
+                    upper_title_text = upper_title_tag.get_text(separator='\n', strip=True)
+                    if upper_title_text and upper_title_text not in seen_titles:
+                        combined_titles.append(upper_title_text)
+                        seen_titles.add(upper_title_text)
+                        print(f"[scraper_debug] Gakujo: Job title from upper section: '{upper_title_text}'")
+                else:
+                    print(f"[scraper_debug] Gakujo: Job title NOT found with upper selector: '{job_title_upper_selector}'")
+            else:
+                print(f"[scraper_debug] Gakujo: No upper job_title_selector in SITE_SELECTORS.")
+
+            # Extract from overview section
+            job_title_overview_selector = selectors_for_site.get("job_title_overview")
+            if job_title_overview_selector:
+                overview_title_tag = soup.select_one(job_title_overview_selector)
+                if overview_title_tag:
+                    overview_title_text = overview_title_tag.get_text(separator='\n', strip=True)
+                    if overview_title_text and overview_title_text not in seen_titles:
+                        combined_titles.append(overview_title_text)
+                        seen_titles.add(overview_title_text)
+                        print(f"[scraper_debug] Gakujo: Job title from overview section: '{overview_title_text}'")
+                else:
+                    print(f"[scraper_debug] Gakujo: Job title NOT found with overview selector: '{job_title_overview_selector}'")
+            else:
+                print(f"[scraper_debug] Gakujo: No overview job_title_selector in SITE_SELECTORS.")
+            
             if combined_titles:
                 data['job_title'] = "\n---\n".join(combined_titles)
                 job_title_extracted_specifically = True
                 print(f"[scraper_debug] Combined job titles for gakujo.ne.jp: '{data['job_title']}'")
-            else: print(f"[scraper_debug] All specific gakujo.ne.jp job title logics failed for this URL.")
+            else:
+                print(f"[scraper_debug] No job titles found from specific selectors for gakujo.ne.jp.")
         
         elif site_domain == "re-katsu.jp":
             print(f"[scraper_debug] Applying specific re-katsu.jp job_title logic.")
@@ -394,5 +369,3 @@ if __name__ == "__main__":
                 else: print(f"  {key}: {value}")
         else:
             print(f"Failed to fetch HTML for {test_url}")
-
-    print("\n--- End of scraper.py test ---")

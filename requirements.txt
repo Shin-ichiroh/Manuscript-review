@@ -6,3 +6,6 @@ openai~=1.0
 Flask~=3.0
 python-dotenv~=0.21
 gunicorn
+Flask-SQLAlchemy 
+Flask-Login 
+Werkzeug 

@@ -49,6 +49,7 @@ def process_job_posting_url(job_post_url: str) -> dict:
         "salary": None,
         "location": None,
         "qualifications": None,
+        "company_name": None, # Added company_name
         "full_text_content": None,
         "image_ocr_texts": [],
         "rulebook_chunks_count": 0,
@@ -84,6 +85,7 @@ def process_job_posting_url(job_post_url: str) -> dict:
     results["salary"] = extracted_info.get('salary')
     results["location"] = extracted_info.get('location')
     results["qualifications"] = extracted_info.get('qualifications')
+    results["company_name"] = extracted_info.get('company_name') # Added company_name
     results["full_text_content"] = extracted_info.get('full_text')
     results["image_ocr_texts"] = extracted_info.get('image_ocr_texts', [])
 

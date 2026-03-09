@@ -147,14 +147,15 @@ def history():
 
     return render_template('history.html', histories=histories_pagination)
 
+with app.app_context():
+    db.create_all()
+    # Create default admin user if it doesn't exist
+    if not User.query.filter_by(username='admin').first():
+        admin_user = User(username='admin')
+        admin_user.set_password('gakujo')
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Default admin user created.")
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        # Create default admin user if it doesn't exist
-        if not User.query.filter_by(username='admin').first():
-            admin_user = User(username='admin')
-            admin_user.set_password('gakujo')
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Default admin user created.")
     app.run(debug=True, host='0.0.0.0', port=5000)

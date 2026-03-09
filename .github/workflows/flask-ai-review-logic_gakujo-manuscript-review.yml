@@ -3,7 +3,7 @@ name: Build and deploy Docker image to Azure Web App - Gakujo-manuscript-review
 on:
   push:
     branches:
-      - Flask-ai-review-logic
+      - main
   workflow_dispatch:
 
 jobs:

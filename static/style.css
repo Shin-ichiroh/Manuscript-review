@@ -130,6 +130,36 @@ pre {
     border-bottom-color: #f5c6cb;
 }
 
+/* Custom styles for extracted information section */
+.accordion-body dl.row {
+    border: 1px solid #e9ecef; /* 全体を囲むフレーム */
+    border-radius: 6px;
+    padding: 15px;
+    background-color: #ffffff; /* 背景色を白に */
+}
+
+.accordion-body dl.row dt,
+.accordion-body dl.row dd {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 0; /* dl, dt, dd のデフォルトマージンをリセット */
+}
+
+.accordion-body dl.row dt {
+    font-weight: bold;
+    color: #2c3e50;
+    border-bottom: 1px dashed #e9ecef; /* 各項目の下線 */
+}
+
+.accordion-body dl.row dd {
+    border-bottom: 1px dashed #e9ecef; /* 各項目の下線 */
+}
+
+.accordion-body dl.row dt:last-of-type,
+.accordion-body dl.row dd:last-of-type {
+    border-bottom: none; /* 最後の項目には下線をつけない */
+}
+
 /* Responsive Design Adjustments */
 @media (max-width: 768px) {
     body {

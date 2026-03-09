@@ -19,14 +19,15 @@ SITE_SELECTORS = {
         "salary": "dl.sep-text dt:-soup-contains('給与') + dd div span",
         "location": "dl.sep-text dt:-soup-contains('勤務地') + dd div span",
         "qualifications": "dl.sep-text dt:-soup-contains('応募資格') + dd div span",
-        "full_text_area": "div.sep__detail__contents" # ★★★ この行を追加/更新 ★★★
+        "company_name": "h1.sep__name__ttl span", # Updated company name selector
+        "full_text_area": "div.sep__detail__contents"
     },
     "re-katsu.jp": {
-        "job_title": "span#lblWantedJobType", # This is Pattern A for re-katsu
-        # Pattern B for re-katsu (upper page job title) will be handled by a specific selector in the code
+        "job_title": "span#lblWantedJobType",
         "salary": "span#trSalary",
         "location": "span#lblWorklocation",
         "qualifications": "span#lblTalentedpeople",
+        "company_name": "span#lblCompanyName", # Corrected company name selector
         "full_text_area": "section#onRec"
     },
     "re-katsu30.jp": {
@@ -34,6 +35,7 @@ SITE_SELECTORS = {
         "salary": "h3.recruitDetail__sectionSubTitle:-soup-contains('給与') + p.recruitDetail__sectionText",
         "location": "h3.recruitDetail__sectionSubTitle:-soup-contains('勤務地') + p.recruitDetail__sectionText",
         "qualifications": "h3.recruitDetail__sectionSubTitle:-soup-contains('求める人材') + p.recruitDetail__sectionText",
+        "company_name": "h1.recruitDetail__headTitle", # Corrected company name selector
         "full_text_area": "main.recruitDetail > article"
     }
 }
@@ -172,6 +174,7 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
     soup = BeautifulSoup(html_content, "html.parser")
     data: dict[str, any] = {
         "job_title": None, "salary": None, "location": None, "qualifications": None,
+        "company_name": None, # Added company_name to data dictionary
         "full_text": None, "image_ocr_texts": [],
     }
     print(f"[scraper_debug] ドメイン '{site_domain}' の抽出処理を開始します。ベースURL: {base_url}")
@@ -374,9 +377,9 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
         if not data['job_title']:
             print(f"[scraper_debug] 全ての職種抽出試行が失敗しました。({site_domain}) Job title は None のままです。")
 
-        # --- 給与 (salary)、勤務地 (location)、応募資格 (qualifications) の抽出 ---
+        # --- 給与 (salary)、勤務地 (location)、応募資格 (qualifications)、企業名 (company_name) の抽出 ---
         # これらは既存のSITE_SELECTORS定義に基づいて抽出を試みる
-        for field_key in ["salary", "location", "qualifications"]:
+        for field_key in ["salary", "location", "qualifications", "company_name"]:
             selector = selectors_for_site.get(field_key)
             print(f"[scraper_debug] フィールド '{field_key}' のセレクタ '{selector}' で抽出を試みます。")
             if selector:
@@ -411,6 +414,7 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
             print(f"[scraper_debug] 全文テキスト (フォールバック) の文字数: {len(data['full_text'])}")
 
     print(f"[scraper_debug] 最終的に抽出された職種: '{data['job_title']}'")
+    print(f"[scraper_debug] 最終的に抽出された企業名: '{data['company_name']}'")
     return data
 
 def integrate_all_text(extracted_data: dict) -> str:

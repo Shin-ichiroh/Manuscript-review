@@ -1,58 +1,61 @@
 {% extends "base.html" %}
 
-{% block title %}Review Results{% endblock %}
+{% block title %}審査結果{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1 class="my-4">Review Results</h1>
+    <h1 class="my-4">審査結果</h1>
 
     {% if results.error_message %}
-        <div class="alert alert-danger" role="alert">
-            <strong>Error:</strong> {{ results.error_message }}
-        </div>
+    <div class="alert alert-danger" role="alert">
+        <strong>エラー:</strong> {{ results.error_message }}
+    </div>
     {% else %}
-        <div class="card mb-4">
-            <div class="card-header">
-                Review for: <a href="{{ results.job_post_url }}" target="_blank">{{ results.company_name or results.job_post_url }}</a>
+    <div class="card mb-4">
+        <div class="card-header">
+            審査対象: <a href="{{ results.job_post_url }}" target="_blank">{{ results.company_name or results.job_post_url
+                }}</a>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">AI審査結果</h5>
+            <div class="p-3 bg-light rounded" style="white-space: pre-wrap;">
+                {{ results.review_result | safe }}
             </div>
-            <div class="card-body">
-                <h5 class="card-title">AI-Generated Review</h5>
-                <div class="p-3 bg-light rounded" style="white-space: pre-wrap;">
-                    {{ results.review_result | safe }}
+        </div>
+    </div>
+
+    <div class="accordion" id="detailsAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    求人から抽出した情報
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
+                data-bs-parent="#detailsAccordion">
+                <div class="accordion-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">職種:</dt>
+                        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.job_title or 'N/A' }}</dd>
+
+                        <dt class="col-sm-3">給与:</dt>
+                        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.salary or 'N/A' }}</dd>
+
+                        <dt class="col-sm-3">勤務地:</dt>
+                        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.location or 'N/A' }}</dd>
+
+                        <dt class="col-sm-3">応募資格:</dt>
+                        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.qualifications or 'N/A' }}</dd>
+                    </dl>
                 </div>
             </div>
         </div>
-
-        <div class="accordion" id="detailsAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                        Extracted Information
-                    </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#detailsAccordion">
-                    <div class="accordion-body">
-                        <dl class="row">
-                            <dt class="col-sm-3">Job Title:</dt>
-                            <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.job_title or 'N/A' }}</dd>
-
-                            <dt class="col-sm-3">Salary:</dt>
-                            <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.salary or 'N/A' }}</dd>
-
-                            <dt class="col-sm-3">Location:</dt>
-                            <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.location or 'N/A' }}</dd>
-
-                            <dt class="col-sm-3">Qualifications:</dt>
-                            <dd class="col-sm-9" style="white-space: pre-wrap;">{{ results.qualifications or 'N/A' }}</dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </div>
     {% endif %}
 
     <div class="mt-4 text-center">
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">ホームへ戻る</a>
     </div>
 </div>
 {% endblock %}

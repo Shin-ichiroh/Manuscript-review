@@ -56,15 +56,6 @@ label {
     font-size: 1.1em;
 }
 
-input[type="url"] {
-    width: calc(100% - 24px); /* Adjust width considering padding and border */
-    padding: 12px;
-    margin-bottom: 25px;
-    border: 1px solid #ced4da; /* Softer border color */
-    border-radius: 4px;
-    font-size: 1em;
-    box-sizing: border-box; /* Important for width calculation */
-}
 
 input[type="submit"], button#submit-button { /* Added button for JS interaction */
     background-color: #007bff;

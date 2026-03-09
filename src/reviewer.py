@@ -57,6 +57,7 @@ REVIEW_PROMPT_TEMPLATE = """\
 給与: {salary}
 勤務地: {location}
 応募資格: {qualifications}
+試用期間に関する明記: {trial_period}
 求人原稿のその他全文テキスト: {full_text_content}
 
 ### 出力
@@ -120,7 +121,7 @@ def simulate_ai_call(prompt: str) -> str:
 
 def perform_review(
     job_post_url: str, job_title: str | None, salary: str | None, location: str | None,
-    qualifications: str | None, full_text_content: str | None, rulebook_vector_db: list[dict]
+    qualifications: str | None, trial_period: str | None, full_text_content: str | None, rulebook_vector_db: list[dict]
 ) -> str:
     text_for_rag_parts = []
     if job_title: text_for_rag_parts.append(f"職種: {job_title}")
@@ -145,6 +146,7 @@ def perform_review(
     prompt_data = {
         "job_post_url": job_post_url or "N/A", "job_title": job_title or "N/A", "salary": salary or "N/A",
         "location": location or "N/A", "qualifications": qualifications or "N/A",
+        "trial_period": trial_period or "明記が見当たりません",
         "full_text_content": full_text_content or "N/A", "relevant_rules": retrieved_rules_text
     }
     assembled_prompt = REVIEW_PROMPT_TEMPLATE.format(**prompt_data)

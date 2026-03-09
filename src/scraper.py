@@ -174,7 +174,7 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
     soup = BeautifulSoup(html_content, "html.parser")
     data: dict[str, any] = {
         "job_title": None, "salary": None, "location": None, "qualifications": None,
-        "company_name": None, # Added company_name to data dictionary
+        "company_name": None, "trial_period": None,
         "full_text": None, "image_ocr_texts": [],
     }
     print(f"[scraper_debug] ドメイン '{site_domain}' の抽出処理を開始します。ベースURL: {base_url}")
@@ -412,6 +412,27 @@ def extract_text_from_html(html_content: str, base_url: str, site_domain: str) -
             print(f"[scraper_debug] 全文テキストエリアのセレクタが定義されていません。ページ全体のテキストを取得します。")
             data['full_text'] = soup.get_text(separator='\n', strip=True)
             print(f"[scraper_debug] 全文テキスト (フォールバック) の文字数: {len(data['full_text'])}")
+
+        # --- 試用期間 (trial_period) の抽出 ---
+        trial_period_texts = []
+        for tag in soup.find_all(['th', 'td', 'dt', 'dd', 'h2', 'h3', 'span', 'p']):
+            text = tag.get_text(separator=' ', strip=True)
+            if '試用期間' in text:
+                trial_period_texts.append(text)
+                if tag.name in ('th', 'dt'):
+                    sibling = tag.find_next_sibling()
+                    if sibling:
+                        trial_period_texts.append(sibling.get_text(separator='\n', strip=True))
+        
+        if trial_period_texts:
+            seen = set()
+            unique_texts = []
+            for t in trial_period_texts:
+                if t not in seen:
+                    unique_texts.append(t)
+                    seen.add(t)
+            data['trial_period'] = "\n".join(unique_texts)
+            print(f"[scraper_debug] 試用期間テキストを抽出しました: '{data['trial_period'][:100]}...'")
 
     print(f"[scraper_debug] 最終的に抽出された職種: '{data['job_title']}'")
     print(f"[scraper_debug] 最終的に抽出された企業名: '{data['company_name']}'")

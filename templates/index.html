@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}ホーム{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1 class="my-4">Manuscript Review Agent</h1>
-    <p class="lead">Enter the URL of the job posting you want to review.</p>
-    
+    <h1 class="my-4">AI原稿審査エージェント</h1>
+    <p class="lead">審査したい求人原稿のURLを入力してください。</p>
+
     <form action="/review" method="post">
         <div class="input-group mb-3">
             <input type="url" class="form-control" name="url" placeholder="https://example-job-posting.com/" required>
-            <button class="btn btn-primary" type="submit">Review</button>
+            <button class="btn btn-primary" type="submit">審査を実行</button>
         </div>
     </form>
 </div>

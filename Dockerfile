@@ -3,9 +3,9 @@ FROM python:3.13-slim
 
 # Set environment variables
 # Prevents Python from writing pyc files to disc (equivalent to python -B option)
-ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 # Install OS-level dependencies for Chromium and ChromeDriver
 # Based on common requirements for headless Chrome on Debian-based systems
@@ -14,8 +14,9 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     # ---- Add Google Chrome's official PPA and install Chrome ----
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
+    && mkdir -p /etc/apt/keyrings \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
     && apt-get update \
     && apt-get install -y \
     google-chrome-stable \
@@ -36,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     # libatk-bridge2.0-0 \ # Often for accessibility, might not be strictly needed
     # libgtk-3-0 \ # For GUI, might not be needed for headless
     libgbm-dev \
- # Still can be useful for headless rendering
+    # Still can be useful for headless rendering
     # ---- Install ChromeDriver separately ----
     # We will download a specific version of ChromeDriver later, or rely on webdriver_manager
     # For now, let's assume webdriver_manager will handle ChromeDriver if google-chrome-stable is present.

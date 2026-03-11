@@ -15,10 +15,20 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from src.core_logic import process_job_posting_url, format_review_for_html
 from urllib.parse import urlparse
+import json
 
-# App initialization
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
+
+import pytz
+@app.template_filter('datetime_jst')
+def format_datetime_jst(value):
+    if value is None:
+        return ""
+    if value.tzinfo is None:
+        value = pytz.utc.localize(value)
+    jst = pytz.timezone('Asia/Tokyo')
+    return value.astimezone(jst).strftime('%Y-%m-%d %H:%M')
 
 # Create the 'instance' folder if it doesn't exist
 instance_path = os.path.join(project_root, 'instance')
@@ -57,6 +67,7 @@ class ReviewHistory(db.Model):
     job_title = db.Column(db.Unicode(200), nullable=True)
     company_name = db.Column(db.Unicode(200), nullable=True) # Added company_name
     review_result_raw = db.Column(db.UnicodeText, nullable=True)
+    extracted_info = db.Column(db.UnicodeText, nullable=True) # Added JSON storage
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
@@ -81,12 +92,23 @@ def review():
     # Debugging: Check if company_name is in results_dict
     print(f"[app.py debug] results_dict company_name: {results_dict.get('company_name')}")
 
+    # Format extracted data into JSON
+    extracted_data = {
+        'salary': results_dict.get('salary'),
+        'location': results_dict.get('location'),
+        'qualifications': results_dict.get('qualifications'),
+        'trial_period': results_dict.get('trial_period'),
+        'full_text_content': results_dict.get('full_text_content')
+    }
+    extracted_json = json.dumps(extracted_data, ensure_ascii=False)
+
     # Save to history
     history_entry = ReviewHistory(
         job_url=job_url,
         job_title=results_dict.get('job_title'),
         company_name=results_dict.get('company_name'), # Added company_name
         review_result_raw=results_dict.get('review_result_raw'),
+        extracted_info=extracted_json,
         author=current_user
     )
     db.session.add(history_entry)
@@ -160,9 +182,13 @@ def history():
 
     histories_pagination = histories_query.paginate(page=page, per_page=10, error_out=False)
 
-    # Format review_result_raw for display
+    # Format review_result_raw for display and parse JSON
     for history_entry in histories_pagination.items:
         history_entry.formatted_review = format_review_for_html(history_entry.review_result_raw)
+        try:
+            history_entry.extracted_data = json.loads(history_entry.extracted_info) if history_entry.extracted_info else {}
+        except Exception:
+            history_entry.extracted_data = {}
 
     return render_template('history.html', histories=histories_pagination)
 

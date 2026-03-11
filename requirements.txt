@@ -10,3 +10,4 @@ Flask-SQLAlchemy
 Flask-Login 
 Werkzeug 
 pyodbc
+pytz

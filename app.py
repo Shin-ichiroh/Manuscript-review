@@ -102,11 +102,16 @@ def review():
     }
     extracted_json = json.dumps(extracted_data, ensure_ascii=False)
 
+    # Safely truncate strings to prevent DB truncation errors
+    safe_job_url = job_url[:499] if job_url else job_url
+    safe_job_title = results_dict.get('job_title')[:199] if results_dict.get('job_title') else None
+    safe_company_name = results_dict.get('company_name')[:199] if results_dict.get('company_name') else None
+
     # Save to history
     history_entry = ReviewHistory(
-        job_url=job_url,
-        job_title=results_dict.get('job_title'),
-        company_name=results_dict.get('company_name'), # Added company_name
+        job_url=safe_job_url,
+        job_title=safe_job_title,
+        company_name=safe_company_name, # Added company_name
         review_result_raw=results_dict.get('review_result_raw'),
         extracted_info=extracted_json,
         author=current_user

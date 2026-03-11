@@ -19,12 +19,12 @@
     {% for history in histories.items %}
     <div class="card mb-3 shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
+            <h5 class="mb-0 text-truncate" style="max-width: 70%;">
                 審査対象: <a href="{{ history.job_url }}" target="_blank">{{ history.company_name or history.job_url }}</a>
             </h5>
-            <div class="text-end">
+            <div class="text-end" style="min-width: 150px;">
                 <small class="text-muted d-block">審査依頼者: {{ history.author.username }}</small>
-                <small class="text-muted">{{ history.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                <small class="text-muted d-block">{{ history.timestamp | datetime_jst }}</small>
             </div>
         </div>
         <div class="card-body">

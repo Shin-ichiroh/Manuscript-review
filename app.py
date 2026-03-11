@@ -16,9 +16,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from src.core_logic import process_job_posting_url, format_review_for_html
 from urllib.parse import urlparse
 
-# App initialization
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
+
+import pytz
+@app.template_filter('datetime_jst')
+def format_datetime_jst(value):
+    if value is None:
+        return ""
+    if value.tzinfo is None:
+        value = pytz.utc.localize(value)
+    jst = pytz.timezone('Asia/Tokyo')
+    return value.astimezone(jst).strftime('%Y-%m-%d %H:%M')
 
 # Create the 'instance' folder if it doesn't exist
 instance_path = os.path.join(project_root, 'instance')

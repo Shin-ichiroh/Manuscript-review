@@ -6,13 +6,26 @@
 <div class="container mt-4">
     <h1 class="mb-4">審査履歴</h1>
 
+    <!-- 検索フォーム -->
+    <form action="{{ url_for('history') }}" method="GET" class="mb-4 d-flex">
+        <input type="text" name="q" class="form-control me-2" placeholder="企業名や審査依頼者で検索..." value="{{ request.args.get('q', '') }}">
+        <button type="submit" class="btn btn-outline-primary whitespace-nowrap" style="white-space: nowrap;">検索</button>
+        {% if request.args.get('q') %}
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary ms-2 whitespace-nowrap" style="white-space: nowrap;">クリア</a>
+        {% endif %}
+    </form>
+
     {% if histories.items %}
     {% for history in histories.items %}
     <div class="card mb-3 shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">審査対象: <a href="{{ history.job_url }}" target="_blank">{{ history.company_name or
-                    history.job_url }}</a></h5>
-            <small class="text-muted">{{ history.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+            <h5 class="mb-0">
+                審査対象: <a href="{{ history.job_url }}" target="_blank">{{ history.company_name or history.job_url }}</a>
+            </h5>
+            <div class="text-end">
+                <small class="text-muted d-block">審査依頼者: {{ history.author.username }}</small>
+                <small class="text-muted">{{ history.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
         </div>
         <div class="card-body">
             <h6 class="card-subtitle mb-2 text-muted">AI審査結果</h6>
@@ -27,19 +40,19 @@
     <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center mt-4">
             <li class="page-item {% if not histories.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('history', page=histories.prev_num) }}">前へ</a>
+                <a class="page-link" href="{{ url_for('history', page=histories.prev_num, q=request.args.get('q', '')) }}">前へ</a>
             </li>
             {% for page_num in histories.iter_pages() %}
             {% if page_num %}
             <li class="page-item {% if histories.page == page_num %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('history', page=page_num) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('history', page=page_num, q=request.args.get('q', '')) }}">{{ page_num }}</a>
             </li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">...</span></li>
             {% endif %}
             {% endfor %}
             <li class="page-item {% if not histories.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('history', page=histories.next_num) }}">次へ</a>
+                <a class="page-link" href="{{ url_for('history', page=histories.next_num, q=request.args.get('q', '')) }}">次へ</a>
             </li>
         </ul>
     </nav>

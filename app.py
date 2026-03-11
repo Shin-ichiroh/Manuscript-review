@@ -25,7 +25,12 @@ instance_path = os.path.join(project_root, 'instance')
 if not os.path.exists(instance_path):
     os.makedirs(instance_path)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(instance_path, 'database.db')}"
+# Use DATABASE_URL from environment variables if available (e.g. for Azure DB), otherwise fallback to local SQLite
+db_uri = os.environ.get('DATABASE_URL')
+if not db_uri:
+    db_uri = f"sqlite:///{os.path.join(instance_path, 'database.db')}"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -138,8 +143,22 @@ def register():
 @login_required
 def history():
     page = request.args.get('page', 1, type=int)
-    histories_query = ReviewHistory.query.filter_by(author=current_user).order_by(ReviewHistory.timestamp.desc())
-    histories_pagination = histories_query.paginate(page=page, per_page=10)
+    search_query = request.args.get('q', '').strip()
+
+    # Base query for all histories, ordered by timestamp
+    histories_query = ReviewHistory.query.join(User).order_by(ReviewHistory.timestamp.desc())
+
+    # Apply search filter if query is provided
+    if search_query:
+        search_pattern = f"%{search_query}%"
+        histories_query = histories_query.filter(
+            db.or_(
+                ReviewHistory.company_name.ilike(search_pattern),
+                User.username.ilike(search_pattern)
+            )
+        )
+
+    histories_pagination = histories_query.paginate(page=page, per_page=10, error_out=False)
 
     # Format review_result_raw for display
     for history_entry in histories_pagination.items:

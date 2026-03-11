@@ -40,7 +40,7 @@ login_manager.login_view = 'login'
 # --- Database Models ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
+    username = db.Column(db.Unicode(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     histories = db.relationship('ReviewHistory', backref='author', lazy=True)
 
@@ -54,9 +54,9 @@ class ReviewHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     job_url = db.Column(db.String(500), nullable=False)
-    job_title = db.Column(db.String(200), nullable=True)
-    company_name = db.Column(db.String(200), nullable=True) # Added company_name
-    review_result_raw = db.Column(db.Text, nullable=True)
+    job_title = db.Column(db.Unicode(200), nullable=True)
+    company_name = db.Column(db.Unicode(200), nullable=True) # Added company_name
+    review_result_raw = db.Column(db.UnicodeText, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader

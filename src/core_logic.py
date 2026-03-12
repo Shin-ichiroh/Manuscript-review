@@ -11,6 +11,11 @@ def format_review_for_html(review_text: str | None) -> str:
     if not review_text:
         return "<p>審査結果なし</p>"
     
+    # 箇条書きのラベル「問題点がある箇所」などがAIによって太字にされなかった場合でも強制的に太字タグの対象にする
+    review_text = re.sub(r'^・\s*\*?問題点がある箇所\*?\s*:', '・**問題点がある箇所**:', review_text, flags=re.MULTILINE)
+    review_text = re.sub(r'^・\s*\*?問題の内容\*?\s*:', '・**問題の内容**:', review_text, flags=re.MULTILINE)
+    review_text = re.sub(r'^・\s*\*?修正提案\*?\s*:', '・**修正提案**:', review_text, flags=re.MULTILINE)
+
     # Convert markdown-like bold to <strong> tags
     html_output = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', review_text)
     
@@ -20,9 +25,15 @@ def format_review_for_html(review_text: str | None) -> str:
 
     for line in lines:
         stripped_line = line.strip()
-        if stripped_line.startswith("・<strong>問題点がある箇所</strong>"):
-            if first_item_processed: # 2つ目以降の「問題点がある箇所」の前に<hr>を挿入
-                processed_html_parts.append("<hr style=\"margin-top: 1em; margin-bottom: 1em;\">")
+        if stripped_line == "---":
+            processed_html_parts.append("<hr style=\"margin-top: 1.5em; margin-bottom: 1.5em; border: 0; border-top: 2px solid #ccc;\">")
+        elif stripped_line.startswith("### "):
+            # Render as h4 header
+            header_text = stripped_line[4:].strip()
+            processed_html_parts.append(f"<h4 style=\"margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; color: #0d6efd; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3em;\">{header_text}</h4>")
+        elif stripped_line.startswith("・<strong>問題点がある箇所</strong>"):
+            if first_item_processed: # 2つ目以降の「問題点がある箇所」の前に余白を挿入
+                processed_html_parts.append("<div style=\"margin-top: 1.5em;\"></div>")
             processed_html_parts.append(f'<p style="margin-bottom: 0.25em; margin-left: 1.5em; text-indent: -1.5em;">・ {stripped_line[1:].strip()}</p>')
             first_item_processed = True
         elif stripped_line.startswith("・"):
